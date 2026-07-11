@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Data (generated at runtime)
+data/uploads/*
+data/results/*
+!data/results/_jobs/
+data/results/_jobs/*
+data/models/*
+!data/models/.gitkeep
+
+# Logs
+*.log
+server.log
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,10 @@
+# CrossFit AI Judge - Python AI Engine
+mediapipe==0.10.35
+opencv-python-headless==4.13.0.92
+numpy>=1.26,<2.2
+scipy>=1.11
+fastapi==0.128.0
+uvicorn>=0.30
+python-multipart>=0.0.9
+pillow>=10.0
+matplotlib>=3.7
