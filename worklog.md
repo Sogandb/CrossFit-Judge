@@ -58,3 +58,17 @@ Stage Summary:
 - Transition engineering: orchestrator FSM with TRANSITION states, boundary detection with confirmation windows, premature-transition detection
 - Variant engineering: outcome-based predicates (start: arms extended; credit: chin breaks bar plane) are variant-invariant; mixed technique mid-set requires no special handling; only encode technique constraints where the RULEBOOK mandates them (flag technique_freedom per movement)
 - New metrics: boundary F1 (±0.5s), task attribution accuracy, variant-invariance delta
+
+---
+Task ID: 5
+Agent: main (Super Z)
+Task: Camera angle strategy (sagittal vs frontal per movement, fixed vs changing mid-WOD) + handling hijab-wearing athletes (occluded landmarks) in pose estimation judging
+
+Work Log:
+- Ran 5 web searches: CrossFit camera angle rules, hijab/loose clothing pose estimation, multi-view fusion, occlusion benchmarks (OCHuman), pose fairness across demographics
+- Key finds: official CrossFit guidance = fixed 3/4 view whole video, camera >=90cm height, no cuts (Games best practices + Quarterfinals FAQ + L4 course 45deg); multi-view fusion without prior calibration (PMC11644880 stereo MediaPipe); loose-clothing pose estimation (arXiv 2212.04820); occlusion-robust HPE via occlusion augmentation (arXiv 2304.12069); OCHuman benchmark + occlusion measurement for reliable HPE (ACM); Sony AI + AAAI-23 fairness evaluations of HPE across demographic groups (performance discrepancies for ALL models)
+- Composed: (1) camera strategy = fixed 3/4 diagonal as default rule + optional dual fixed cameras (view arbitration/fusion per task) + per-movement preferred_view metadata in DSL + Day-0 camera plan generation; NO dynamic angle changes mid-WOD; (2) hijab strategy = landmark-availability contract per movement, standards re-expression with silhouette/geometric proxies (jaw profile from side view, arm-vertical alignment instead of ears), segmentation-based fallback, occlusion augmentation training, hijabi athletes in golden dataset from day 1 + accuracy parity metric, rules adjustments (form-fitting sports hijab, face profile visible), privacy as trust feature (on-device processing, face blur in review clips)
+
+Stage Summary:
+- Camera: fixed 3/4 view is the official+engineering compromise; dual-camera optional upgrade; per-task view metadata + escalation when required view unavailable
+- Hijab: measure differently, not judge differently — same outcome standards, alternative landmark geometry; parity metric mandatory; privacy = marketing advantage in target market

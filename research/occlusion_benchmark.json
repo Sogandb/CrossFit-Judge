@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://arxiv.org/abs/2304.12069",
+    "name": "[2304.12069] Occlusion Robust 3D Human Pose Estimation",
+    "snippet": "Abstract:Occlusion is an omnipresent challenge in 3D human pose estimation (HPE). In spite of the large amount of research dedicated to 3D ...",
+    "host_name": "arxiv.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.emergentmind.com/topics/ochuman-pose-dataset",
+    "name": "OCHuman-Pose: Benchmark for Crowded Pose Estimation",
+    "snippet": "OCHuman-Pose is a comprehensive benchmark dataset for evaluating 2D and 3D human pose estimation in highly crowded and occluded scenes. Missing:  clothing  humans",
+    "host_name": "www.emergentmind.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/pdf/2304.12069",
+    "name": "[PDF] Occlusion Robust 3D Human Pose Estimation with  - arXiv",
+    "snippet": "With our tandem solution for improving occlusion robustness using (a) spatio-temporal information and (b) occlusion augmentation strategies, our.",
+    "host_name": "arxiv.org",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.toyota-ti.ac.jp/Lab/Denshi/iim/ukita/MyPapers/ACPR2015.pdf",
+    "name": "[PDF] Occlusion-Robust Model Learning for Human Pose Estimation",
+    "snippet": "In this paper we examine the efficacy of self-occlusion- aware appearance learning for the part based model. Ap- pearance modeling with less accurate ...",
+    "host_name": "www.toyota-ti.ac.jp",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.alphaxiv.org/abs/2401.00155",
+    "name": "A comprehensive framework for occluded human pose estimation",
+    "snippet": "In this paper, we propose a comprehensive framework DAG (Data, Attention, Graph) to address the performance degradation caused by occlusion. Specifically, we ...",
+    "host_name": "www.alphaxiv.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://sigport.org/sites/default/files/docs/icassp2024.pdf",
+    "name": "[PDF] a comprehensive framework for occluded human pose estimation",
+    "snippet": "In this paper, we propose a comprehensive frame- work DAG (Data, Attention, Graph) to address the perfor- mance degradation caused by occlusion. Specifically, ...",
+    "host_name": "sigport.org",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/zhezh/occlusion_person",
+    "name": "GitHub - zhezh/occlusion_person: A dataset for multiview 3D",
+    "snippet": "The human models are driven by the poses selected from the CMU Motion Capture database. We purposely use objects such as sofas and desks to occlude some body ...",
+    "host_name": "github.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dl.acm.org/doi/full/10.1145/3747327.3763043",
+    "name": "When Pose Estimation Fails: Measuring Occlusion for Reliable",
+    "snippet": "Dataset 1: OCHuman. OCHuman (Occluded Human) consists of 5,081 images that were particularly selected to construct a dataset for occlusion.",
+    "host_name": "dl.acm.org",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]
