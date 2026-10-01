@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://arxiv.org/html/2411.11548v1",
+    "name": "Real-Time Fitness Exercise Classification and Counting from Video",
+    "snippet": "This paper introduces a novel method for real-time exercise classification using a Bidirectional Long Short-Term Memory (BiLSTM) neural network.",
+    "host_name": "arxiv.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/EzerE/Workout-Video-Classifier",
+    "name": "EzerE/Workout-Video-Classifier - GitHub",
+    "snippet": "A deep learning classifier that automatically identifies 22 different workout exercises from videos using a CNN-LSTM architecture. Missing:  multi-  gym",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/publication/385920370_Real-Time_Fitness_Exercise_Classification_and_Counting_from_Video_Frames",
+    "name": "Real-Time Fitness Exercise Classification and Counting from Video",
+    "snippet": "The LSTM model is designed to capture the temporal dynamics of exercise movements by processing a sequence of frames.",
+    "host_name": "www.researchgate.net",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S0169260725002093",
+    "name": "Multiscale activity recognition algorithms to improve cross-subjects",
+    "snippet": "Long Short-Term Memory (LSTM) networks, are employed to model temporal dependencies. learn rich representations of activities from raw video input.",
+    "host_name": "www.sciencedirect.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.studocu.com/row/document/the-british-university-in-egypt/macroeconomics/bilstm-model-for-fitness-exercise-classification-and-counting/140479315",
+    "name": "BiLSTM Model for Fitness Exercise Classification and Counting",
+    "snippet": "This study presents a novel exercise classification method utilizing a Bidirectional Long Short-Term Memory (BiLSTM) neural network.",
+    "host_name": "www.studocu.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.alphaxiv.org/abs/2411.11548",
+    "name": "Real-Time Fitness Exercise Classification and Counting from Video",
+    "snippet": "This paper introduces a novel method for real-time exercise classification using a Bidirectional Long Short-Term Memory (BiLSTM) neural network. Missing:  switching  | Show results with:",
+    "host_name": "www.alphaxiv.org",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://scholarworks.calstate.edu/concern/theses/x633f955r",
+    "name": "Gym Exercise Video Classification by Ensemble Learning",
+    "snippet": "We propose two methods to recognize and differentiate less notable exercises using gym equipment and tools one may find in a gym environment. Missing:  detection  switching  LSTM  temporal",
+    "host_name": "scholarworks.calstate.edu",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13324749",
+    "name": "A biomechanical-constrained temporal learning framework for",
+    "snippet": "LSTM networks on a dataset of 4 exercises (squat, deadlift, bench press, overhead press) with 156 videos, achieving 91.2% classification accuracy with emphasis ...",
+    "host_name": "pmc.ncbi.nlm.nih.gov",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

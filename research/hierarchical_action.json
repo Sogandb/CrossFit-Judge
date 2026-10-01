@@ -1,0 +1,56 @@
+[
+  {
+    "url": "https://arxiv.org/abs/2405.17729",
+    "name": "[2405.17729] Hierarchical Action Recognition: A Contrastive",
+    "snippet": "The proposed framework paves the way for hierarchical modeling in video understanding tasks, moving beyond flat categorization. Missing:  sub-  | Show results with:",
+    "host_name": "arxiv.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=DzO-1Pc2NQ4",
+    "name": "Hierarchical Explanations for Video Action Recognition",
+    "snippet": "Hierarchical Explanations for Video Action Recognition Sadaf Gulshad ... (Spotlight) P04 - Hierarchical Explanations for Video Action Recognition.",
+    "host_name": "www.youtube.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7881322",
+    "name": "Complex Human Action Recognition Using a Hierarchical",
+    "snippet": "We name our model as “Hierarchical Feature Reduction & Deep Learning”-based action recognition method, human action classification sub-modules. system action ... Missing:  composite  | Show results with:",
+    "host_name": "pmc.ncbi.nlm.nih.gov",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://doi.org/10.4218/etrij.17.0116.0054",
+    "name": "Extensible Hierarchical Method of Detecting Interactive Actions",
+    "snippet": "The goal of action recognition is to classify the type of a representative action contained in a segmented video. Action detection includes ... Missing:  sub-  | Show results with:",
+    "host_name": "doi.org",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ui.adsabs.harvard.edu/abs/arXiv:2301.00436",
+    "name": "Hierarchical Explanations for Video Action Recognition - ADS",
+    "snippet": "HIPE enables a reasoning process for video action classification by dissecting the input video frames on multiple levels of the class hierarchy, Missing:  sub-  detection",
+    "host_name": "ui.adsabs.harvard.edu",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://openaccess.thecvf.com/content/CVPR2023W/XAI4CV/papers/Gulshad_Hierarchical_Explanations_for_Video_Action_Recognition_CVPRW_2023_paper.pdf",
+    "name": "[PDF] Hierarchical Explanations for Video Action Recognition",
+    "snippet": "In this work, we implement this process for video action recognition by learning hierarchical concepts that we leverage for improved classification performance. Missing:  sub-  | Show results with:",
+    "host_name": "openaccess.thecvf.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  }
+]

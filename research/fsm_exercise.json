@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://www.ijircst.org/DOC/1420_pdf.pdf",
+    "name": "[PDF] AI Real-Time Pose Estimation and Form Correction Using",
+    "snippet": "Phase Detection State Machine. An exercise tracking is done by a Finite State Machine. (FSM). States: Neutral - Transition - Bottom (Point of.",
+    "host_name": "www.ijircst.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dl.acm.org/doi/full/10.1145/3774906.3802776",
+    "name": "GigaFlex: Contactless Monitoring of Muscle Vibrations During",
+    "snippet": "Each repetition involves a lifting (concentric) and lowering (eccentric) phase. These exercises are measured using one-repetition maximum (1RM) identify ...",
+    "host_name": "dl.acm.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2511.13955v1",
+    "name": "GigaFlex: Contactless Monitoring of Muscle Vibrations  - arXiv",
+    "snippet": "Each repetition involves a lifting (concentric) and lowering (eccentric) phase. These exercises are measured using one-repetition maximum (1RM) ...",
+    "host_name": "arxiv.org",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/figure/PRISMA-flow-chart-of-the-study-selection-process_fig1_365870503",
+    "name": "PRISMA flow chart of the study selection process. - ResearchGate",
+    "snippet": "... exercise as a finite-state machine defined by ... pose estimation algorithm, the framework focuses on exercise phase detection and repetition counting.",
+    "host_name": "www.researchgate.net",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mdpi.com/2411-5142/11/2/162",
+    "name": "A Movement Description Language for Functional Training",
+    "snippet": "The MDL provides interpretable exercise definitions that support efficient phase detection and repetition counting in practical training environments. Missing:  concentric  eccentric",
+    "host_name": "www.mdpi.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://journals.sagepub.com/doi/10.1177/2055668320915377",
+    "name": "Segmentation of shoulder rehabilitation exercises for single",
+    "snippet": "The FSM keep track of the movement phase currently under execution (eccentric, concentric, isometric), and for each individual primitive it ...",
+    "host_name": "journals.sagepub.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10692053",
+    "name": "Viewpoint-invariant exercise repetition counting - PMC",
+    "snippet": "This research provides a solution to concurrent repetition counting in human exercise, which is less addressed in the previous study. Missing:  finite  concentric  eccentric",
+    "host_name": "pmc.ncbi.nlm.nih.gov",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/DanielGuarnizo/Pose-Estimation-for-Fitness-Exercise-Analysis",
+    "name": "DanielGuarnizo/Pose-Estimation-for-Fitness-Exercise-Analysis",
+    "snippet": "This project presents a computer vision-based approach for analysing fitness exercises, specifically focusing on the squat, deadlift and bench press movements.",
+    "host_name": "github.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

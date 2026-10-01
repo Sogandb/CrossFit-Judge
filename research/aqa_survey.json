@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://arxiv.org/html/2412.11149v2",
+    "name": "A comprehensive survey of action quality assessment - arXiv",
+    "snippet": "Action Quality Assessment (AQA) aims to automatically evaluate how well human actions are performed and has been widely applied in sports analysis, skill ...",
+    "host_name": "arxiv.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://link.springer.com/article/10.1186/s40537-026-01409-5",
+    "name": "A survey of deep learning-based action quality assessment",
+    "snippet": "This survey systematically reviews deep learning-based methodologies developed for video-based AQA, categorizing Theory Performance Development ...",
+    "host_name": "link.springer.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/HaoYin116/Survey_of_AQA",
+    "name": "A Decade of Action Quality Assessment: Largest Systematic",
+    "snippet": "This survey provides a detailed analysis of research trends, performance comparisons, challenges, and future directions. Through this work, we aim to offer a ...",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC13195145",
+    "name": "Athlete action quality assessment based on transfer neural",
+    "snippet": "A comprehensive survey of action quality assessment: Method and benchmark. ... Action quality assessment using siamese network-based deep metric learning.",
+    "host_name": "pmc.ncbi.nlm.nih.gov",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://haoyin116.github.io/Survey_of_AQA",
+    "name": "A Decade of AQA — Largest Systematic Survey (IJCV 2026)",
+    "snippet": "Action Quality Assessment (AQA)—the ability to quantify the quality of human motion, actions, or skill levels and provide feedback—has far-reaching ...",
+    "host_name": "haoyin116.github.io",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.scribd.com/document/888440461/2412-11149v1",
+    "name": "Action Quality Assessment Survey | PDF | Accuracy And Precision",
+    "snippet": "Action Quality Assessment (AQA) quantitatively evaluates the quality of human actions, providing automated assessments that reduce biases in human judgment.",
+    "host_name": "www.scribd.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/publication/387105353_A_Comprehensive_Survey_of_Action_Quality_Assessment_Method_and_Benchmark",
+    "name": "(PDF) A Comprehensive Survey of Action Quality Assessment",
+    "snippet": "Action Quality Assessment (AQA) aims to automatically evaluate how well human actions are performed and has been widely applied in sports ...",
+    "host_name": "www.researchgate.net",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ui.adsabs.harvard.edu/abs/2026NatSR..1615795G/abstract",
+    "name": "Athlete action quality assessment based on transfer neural",
+    "snippet": "In this paper, for the problem of uneven distribution of AQA scores in long sports videos, an AQA model based on transfer neural network quality score ...",
+    "host_name": "ui.adsabs.harvard.edu",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

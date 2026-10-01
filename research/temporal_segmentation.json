@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://arxiv.org/html/2504.02512v1",
+    "name": "Towards Generalizing Temporal Action Segmentation to  - arXiv",
+    "snippet": "Temporal action segmentation identifies action segments and their respective durations within a long untrimmed video. Missing:  exercise  workout",
+    "host_name": "arxiv.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://link.springer.com/article/10.1007/s44443-026-00734-2",
+    "name": "Video feature guidance for temporal action segmentation",
+    "snippet": "Temporal action segmentation plays a crucial role in real-world video understanding tasks (Muksimova et al. 2025). Missing:  exercise  workout",
+    "host_name": "link.springer.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.emergentmind.com/topics/temporal-action-segmentation",
+    "name": "Temporal Action Segmentation: A Comprehensive Overview",
+    "snippet": "Explore temporal action segmentation—dividing long videos into segments to label actions, key for video analysis in AI and robotics.",
+    "host_name": "www.emergentmind.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/abs/pii/S0925231225023082",
+    "name": "Unsupervised temporal action segmentation with sample",
+    "snippet": "Unsupervised temporal action segmentation (UTAS) addresses the task of partitioning untrimmed videos into coherent action segments without manual annotations. Missing:  workout  | Show results with:",
+    "host_name": "www.sciencedirect.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/nus-cvml/awesome-temporal-action-segmentation/blob/main/README.md",
+    "name": "awesome-temporal-action-segmentation/README.md at main",
+    "snippet": "Temporal Action Segmentation takes as the input an untrimmed video sequence, segments it along the temporal dimension into clips and infers the semantics of ... Missing:  exercise  workout",
+    "host_name": "github.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://stars.library.ucf.edu/cgi/viewcontent.cgi?article=7507&context=etd",
+    "name": "[PDF] Action Recognition, Temporal Localization and Detection in",
+    "snippet": "We group short segments from untrimmed video into sub-actions whose temporal structure is exploited for temporal action localization. Decomposing actions into ... Missing:  exercise  workout",
+    "host_name": "stars.library.ucf.edu",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pubmed.ncbi.nlm.nih.gov/30183621",
+    "name": "Temporal Segment Networks for Action Recognition in Videos",
+    "snippet": "The learned models could be easily deployed for action recognition in both trimmed and untrimmed videos with simple average pooling and multi-scale temporal ... Missing:  exercise  workout",
+    "host_name": "pubmed.ncbi.nlm.nih.gov",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www-nlpir.nist.gov/projects/tvpubs/tv19.papers/ucf.pdf",
+    "name": "[PDF] An Online System for Real-Time Activity Detection in  - NIST",
+    "snippet": "In this work, we focus on untrimmed surveillance videos and propose an online real-time system for spatio-temporal action detection.",
+    "host_name": "www-nlpir.nist.gov",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

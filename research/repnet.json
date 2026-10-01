@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://research.google/blog/repnet-counting-repetitions-in-videos",
+    "name": "RepNet: Counting Repetitions in Videos - Google Research",
+    "snippet": "RepNet is a model that takes as input a video that contains periodic action of a variety of classes (including those unseen during training) and ... 缺少字词：  neural  network  蟭",
+    "host_name": "research.google",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://sites.google.com/corp/view/repnet",
+    "name": "RepNet",
+    "snippet": "We present an approach for estimating the period with which an action is repeated in a video. The crux of the approach lies in constraining the period ... 缺少字词：  per  蟭",
+    "host_name": "sites.google.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/data-science/repnet-counting-repeating-actions-in-a-video-bec1bdcec149",
+    "name": "RepNet: Counting Repeating Actions in a Video | by Param Raval",
+    "snippet": "Releasing RepNet: A neural network architecture for counting and measuring periodicity of repetitions in videos “in the wild”[1] such that ... 缺少字词：  蟭  | 必须包含：",
+    "host_name": "medium.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2411.08878v1",
+    "name": "A Short Note on Evaluating RepNet for Temporal Repetition",
+    "snippet": "This note is related to evaluating the class-agnostic repetition counting model RepNet [1] on various video repetition counting datasets. 缺少字词：  neural  蟭",
+    "host_name": "arxiv.org",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=qSArFEIoSbo",
+    "name": "RepNet: Counting Out Time - Class Agnostic Video  - YouTube",
+    "snippet": "Counting repeated actions in a video is one of the easiest tasks for humans, yet remains incredibly hard for machines. RepNet achieves ... 缺少字词：  蟭  motion",
+    "host_name": "www.youtube.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.alphaxiv.org/abs/2006.15418",
+    "name": "Counting Out Time: Class Agnostic Video Repetition  - alphaXiv",
+    "snippet": "RepNet, developed by Google Research and DeepMind, accurately estimates the period and counts repetitions of actions in 'in the wild' videos in a ... 缺少字词：  Google  蟭",
+    "host_name": "www.alphaxiv.org",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/swlh/repeating-net-repnet-a3dc63ec0f00",
+    "name": "Transformers for Vision/RepNet - Medium",
+    "snippet": "The overall repetition count is computed as the sum of all per-frame counts where i=[1, N] Σpi/ li (E.g. For instance, let's assume all the 64 ... 缺少字词：  蟭  | 必须包含：",
+    "host_name": "medium.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://analyticsindiamag.com/deep-tech/machine-learning-from-videos-pattern",
+    "name": "ML Model That Can Count Heartbeats And Workout Laps  - AIM",
+    "snippet": "The researchers at Google AI have introduced RepNet, a single model that can recognise repetitions within a single video and understand a broad ... 缺少字词：  neural  蟭  motion",
+    "host_name": "analyticsindiamag.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]
