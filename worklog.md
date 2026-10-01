@@ -28,3 +28,18 @@ Work Log:
 Stage Summary:
 - Core design: system = WOD interpreter (compiler analogy), not open-world action recognizer; workout definition constrains the search space
 - Improvement loop: golden dataset from public Open videos, metrics (MAE/OBO, no-rep F1, score exact-match), threshold calibration with hysteresis, ensembles, temporal plausibility priors, human-in-the-loop flywheel
+
+---
+Task ID: 3
+Agent: main (Super Z)
+Task: Strategy for preparing judge-assistant system for next competition round when WOD is unknown until close to event but movement pool is known; broad-coverage vs focused-depth question
+
+Work Log:
+- Ran 7 web searches: Open announcement timeline, historical movement frequency stats, few-shot action recognition, long-tail learning, 2024/2025 Open workouts, MLOps deploy practices, sports screening
+- Key finds: official Open timeline (Thu 12pm PT release, Mon 5pm PT deadline, Wed validation); movement frequency data (thrusters 12-13x, burpees 10x, DU/T2B/CTB most common); movement pairing stats (Zoar); few-shot AR review (arXiv 2407.14744); long-tail systematic review (arXiv 2408.00483); MLOps freeze/rollout practices
+- Composed hybrid strategy: full movement LIBRARY (data layer, cheap) + tiered deep validation (Tier 1 announced pool / Tier 2 historical / Tier 3 rare+fallback), 4-day post-announcement runbook, shadow-run rehearsal on public 2024/2025 Open videos, camera rule control as accuracy lever
+
+Stage Summary:
+- Answer: "Library broad, Perception deep" — define all movements now (cheap data), concentrate golden-dataset + calibration effort on known pool weighted by historical frequency
+- 4-day instantiation runbook (Day 0 parse WOD->DSL, Day 1 dress rehearsal, Day 2-3 shadow run, Day 4 production)
+- Extra levers: control video submission rules to constrain input distribution; freeze model changes before event; auto-escalation fallback for uncovered movements

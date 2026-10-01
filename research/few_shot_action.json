@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://arxiv.org/html/2407.14744v1",
+    "name": "A Comprehensive Review of Few-shot Action Recognition - arXiv",
+    "snippet": "Few-shot action recognition aims to address the high cost and impracticality of manually labeling complex and variable video data in action ...",
+    "host_name": "arxiv.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/document/10489992",
+    "name": "Few-Shot Action Recognition via Multi-View Representation",
+    "snippet": "Few-shot action recognition aims to recognize novel action classes with limited labeled samples and has recently received increasing attention.",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.bmva-archive.org.uk/bmvc/2021/assets/papers/0190.pdf",
+    "name": "[PDF] A Closer Look at Few-Shot Video Classification - BMVA Archive",
+    "snippet": "few-shot video recognition is becoming popular in realistic scenarios, which aims to recognize novel classes with limited labeled videos.",
+    "host_name": "www.bmva-archive.org.uk",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/abs/pii/S1077314223001170",
+    "name": "Cross-domain few-shot action recognition with unlabeled videos",
+    "snippet": "Few-shot action recognition aims to recognize novel action classes with limited labeled data and has recently received widespread attention from both academia ...",
+    "host_name": "www.sciencedirect.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dl.acm.org/doi/10.1145/3688863.3689571",
+    "name": "Exploring the Adaptation Strategy of CLIP for Few-Shot Action",
+    "snippet": "The research explores adaptation strategies for applying CLIP, a powerful vision-language pre-trained model, to few-shot action recognition, a task that ...",
+    "host_name": "dl.acm.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.worldscientific.com/doi/10.1142/S0218001424550139?srsltid=AU7gw4Up9mN8EtEvR0z7kJkHS8SaCnEldAxOadwZdMfVxKdGVxpr4Z7q",
+    "name": "Advancing Incremental Few-Shot Video Action Recognition",
+    "snippet": "In video classification tasks, through incremental learning with few-shot samples, models can gradually learn novel video classes with limited ...",
+    "host_name": "www.worldscientific.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2609.05242v1",
+    "name": "Few-Shot Video Recognition via Hierarchical Metric Learning",
+    "snippet": "Few-shot action recognition aims to classify video samples from novel action categories using only a few annotated support samples.",
+    "host_name": "arxiv.org",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/publication/341400723_Few-Shot_Learning_of_Video_Action_Recognition_Only_Based_on_Video_Contents",
+    "name": "Few-Shot Learning of Video Action Recognition Only Based on",
+    "snippet": "Specifically, we propose a novel few-shot action recognition framework that uses long short-term memory following 3D convolutional layers for sequence modeling ...",
+    "host_name": "www.researchgate.net",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

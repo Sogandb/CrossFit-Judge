@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://arxiv.org/html/2311.01744v1",
+    "name": "Data-Centric Long-Tailed Image Recognition - arXiv",
+    "snippet": "All four methods generate augmented samples for the tail classes to balance the training data. Fig.3 illustrates the core operations of these four ...",
+    "host_name": "arxiv.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/abs/pii/S095219762501468X",
+    "name": "Sampling-tailored two-pronged network for long-tailed class",
+    "snippet": "The core of the proposed approach comprises a two-pronged network consisting of two classification heads designed to handle long-tail imbalanced datasets. One ... Missing:  centric  | Show results with:",
+    "host_name": "www.sciencedirect.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.lgresearch.ai/blog/view?seq=257",
+    "name": "[ICML 2022] Part 1: Long-Tail Distribution Learning - LG AI연구원",
+    "snippet": "It is to address the issue of the variance in the tail class being much smaller than that of the head-class, thus resulting in the biased ... Missing:  centric  | Show results with:",
+    "host_name": "www.lgresearch.ai",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@ruhi20sharma/data-centric-ai-deep-dive-on-class-imbalance-problem-for-supervised-classification-41c650126f04",
+    "name": "Data-Centric AI: deep dive on Class Imbalance Problem for",
+    "snippet": "The task is to train a classification model using the training dataset, which when deployed can correctly predict the class label on a test ...",
+    "host_name": "medium.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://keymakr.com/blog/augmenting-datasets-for-rare-object-classes-a-practical-guide",
+    "name": "Augmenting Datasets for Rare Object Classes: A Practical Guide",
+    "snippet": "Learn about methods for augmenting datasets with sparse classes to improve model performance in AI tasks by overcoming class imbalance issues.",
+    "host_name": "keymakr.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://icml.cc/virtual/2025/poster/46627",
+    "name": "Adaptive Pruner for Long-tailed Data - ICML 2026",
+    "snippet": "By focusing on protecting parameters critical for tail classes, LTAP significantly enhances computational efficiency while maintaining model performance. This ...",
+    "host_name": "icml.cc",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://openaccess.thecvf.com/content/ACCV2022/papers/Xu_Boosting_Dense_Long-Tailed_Object_Detection_from_Data-Centric_View_ACCV_2022_paper.pdf",
+    "name": "[PDF] Boosting Dense Long-Tailed Object Detection from Data",
+    "snippet": "In this paper, we propose REDet: a rare data centric detection framework which could simultaneously generate training data of the rare class and deal with data ...",
+    "host_name": "openaccess.thecvf.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2408.00483v1",
+    "name": "A Systematic Review on Long-Tailed Learning - arXiv",
+    "snippet": "Long-tailed data is essentially a special type of multi-class imbalanced data with a sufficiently large number of tail (minority) classes.",
+    "host_name": "arxiv.org",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]
