@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://dl.acm.org/doi/10.1145/3833086",
+    "name": "A Temporal Action Detection Framework Based on Multi-Scale",
+    "snippet": "The purpose of the temporal action detection (TAD) task is to accurately locate and recognize all actions in an untrimmed video, including the ...",
+    "host_name": "dl.acm.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2408.09354v1",
+    "name": "Boundary-Recovering Network for Temporal Action Detection",
+    "snippet": "Temporal action detection aims to not only correctly classify actions but also identify temporal boundaries in untrimmed videos. Pioneering ... Missing:  transition  | Show results with:",
+    "host_name": "arxiv.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/abs/pii/S0950705124008980",
+    "name": "ConvTransformer Attention Network for temporal action detection",
+    "snippet": "It aims to simultaneously predict the temporal boundaries and categories for each action instance within an untrimmed video [1], [2], [3]. This task plays a ...",
+    "host_name": "www.sciencedirect.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/6287639/10820123/10852160.pdf",
+    "name": "Application of Temporal Action Detection Technology in",
+    "snippet": "Temporal Action Detection (TAD) is a technology in the field of video learning that can locate the initial time, the final time, and the action ...",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://link.springer.com/article/10.1007/s10462-023-10650-w",
+    "name": "Overview of temporal action detection based on deep learning",
+    "snippet": "Temporal Action Detection (TAD) aims to accurately capture each action interval in an untrimmed video and to understand human actions.",
+    "host_name": "link.springer.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "http://ai.stanford.edu/~syyeung/resources/YeuRusMorLiCvpr16.pdf",
+    "name": "[PDF] End-to-end Learning of Action Detection from Frame Glimpses",
+    "snippet": "In this work we introduce a fully end-to-end approach for action detection in videos that learns to directly predict the temporal bounds of actions. Missing:  transition  | Show results with:",
+    "host_name": "ai.stanford.edu",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/zhenyingfang/Awesome-Temporal-Action-Detection-Temporal-Action-Proposal-Generation",
+    "name": "GitHub - zhenyingfang/Awesome-Temporal-Action-Detection",
+    "snippet": "(BSP) Boundary-sensitive Pre-training for Temporal Localization in Videos ... End-to-end Learning of Action Detection from Frame Glimpses in Videos (CVPR 2016) ... Missing:  transition  | Show results with:",
+    "host_name": "github.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://openreview.net/forum?id=Zwi6DEyYzS",
+    "name": "Towards Human-Like Event Boundary Detection in",
+    "snippet": "This paper introduces a two-level, cognitively inspired event segmentation scheme for unstructured video. The first level uses a semi-supervised ...",
+    "host_name": "openreview.net",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

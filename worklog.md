@@ -43,3 +43,18 @@ Stage Summary:
 - Answer: "Library broad, Perception deep" — define all movements now (cheap data), concentrate golden-dataset + calibration effort on known pool weighted by historical frequency
 - 4-day instantiation runbook (Day 0 parse WOD->DSL, Day 1 dress rehearsal, Day 2-3 shadow run, Day 4 production)
 - Extra levers: control video submission rules to constrain input distribution; freeze model changes before event; auto-escalation fallback for uncovered movements
+
+---
+Task ID: 4
+Agent: main (Super Z)
+Task: How to handle movement transitions during WODs (transition risk matrix) + how to handle technique variants (kipping/butterfly/mixed pull-ups) in judging
+
+Work Log:
+- Ran 5 web searches: CrossFit pull-up standards, kipping vs butterfly biomechanics, temporal action boundary detection, HMM sequential activity, fine-grained action recognition
+- Key finds: official CrossFit PDF (18.5) "Dead hang, kipping or butterfly pull-ups are allowed as long as all the requirements are met" = standards are OUTCOME-based not technique-based; BoxRox 22.3 "any style permitted"; JSES study (strict/kipping/butterfly differ in muscle activation but same outcome checkpoints); TAD boundary detection (Boundary-Recovering Network arXiv 2408.09354); adaptive HMM activity transitions (PMC5729042); BMVC 2025 fine-grained action recognition (intra-class variation)
+- Composed: (1) transition solution = explicit TRANSITION state + guard/confirmation window + expected-sequence constraint + rep-completion gate + task-level hysteresis + spatial anchors + pair-specific fatigue-inclusive test matrix; (2) variant solution = separate validity layer (outcome-based, technique-agnostic) from technique layer (analytics only), mixed-variant sets become non-problem by construction, technique_freedom flag per movement for technique-mandated standards (HSPU strict vs kipping per division)
+
+Stage Summary:
+- Transition engineering: orchestrator FSM with TRANSITION states, boundary detection with confirmation windows, premature-transition detection
+- Variant engineering: outcome-based predicates (start: arms extended; credit: chin breaks bar plane) are variant-invariant; mixed technique mid-set requires no special handling; only encode technique constraints where the RULEBOOK mandates them (flag technique_freedom per movement)
+- New metrics: boundary F1 (±0.5s), task attribution accuracy, variant-invariance delta
