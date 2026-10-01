@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12650453",
+    "name": "Wearable Sensors for Precise Exercise Monitoring and Analysis - PMC",
+    "snippet": "This review organizes wearable sensing across four monitoring dimensions—physiological, kinematic, biochemical, and dynamic—and maps them onto ...",
+    "host_name": "pmc.ncbi.nlm.nih.gov",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/abs/pii/S1568494625017867",
+    "name": "Automated recognition of worker activity using machine learning and",
+    "snippet": "This study focuses on automatic worker activity recognition using multilayer perceptron and multi-sensor fusion. We present a testing ...",
+    "host_name": "www.sciencedirect.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://journals.humankinetics.com/abstract/journals/jmpb/8/1/article-jmpb.2024-0045.xml",
+    "name": "The Use of Wearable Cameras to Capture Physical Activity and",
+    "snippet": "Wearable camera media annotations of physical activity and sedentary behavior are being used within the computer science field for first-person ...",
+    "host_name": "journals.humankinetics.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.nature.com/articles/s41597-026-07802-2",
+    "name": "A wearable sensor–based kinematic dataset collected under",
+    "snippet": "REHAB, a wearable sensor-based kinematic dataset collected from 120 post-stroke patients during a two-week rehabilitation program. intuitive ...",
+    "host_name": "www.nature.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://link.springer.com/article/10.1007/s10462-025-11275-x",
+    "name": "A systematic literature review on human activity recognition using",
+    "snippet": "The review highlights the deployment of various sensors embedded in smart devices like smartwatches and fitness trackers, which gather real-time ...",
+    "host_name": "link.springer.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://papers.ssrn.com/sol3/Delivery.cfm/1014377f-2814-4584-a836-6fcf7e49e931-MECA.pdf?abstractid=4862033&mirid=1",
+    "name": "[PDF] Smartphone-based Artificial Intelligence System for Real  - SSRN",
+    "snippet": "study investigated a system for the automatic, real-time counting and recording of exercise repetitions using only a single smartphone camera recording the ...",
+    "host_name": "papers.ssrn.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2404.15349v1",
+    "name": "A Survey on Multimodal Wearable Sensor-based Human Action",
+    "snippet": "They evaluated 28 systems in terms of recognition accuracy, energy consumption, obtrusiveness, and flexibility.",
+    "host_name": "arxiv.org",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.frontiersin.org/journals/neurorobotics/articles/10.3389/fnbot.2026.1785114/full",
+    "name": "a deep learning framework integrating wearable sensor fusion",
+    "snippet": "this study proposes a multimodal HAR framework for personalized sports health promotion by integrating wearable sensor streams with deep learning architectures ...",
+    "host_name": "www.frontiersin.org",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

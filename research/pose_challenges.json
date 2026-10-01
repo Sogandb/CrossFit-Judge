@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://www.researchgate.net/publication/398609676_REAL-TIME_HUMAN_POSE_ESTIMATION_TECHNIQUES_A_COMPARATIVE_REVIEW_OF_MODERN_DEEP_LEARNING_APPROACHES",
+    "name": "(PDF) REAL-TIME HUMAN POSE ESTIMATION TECHNIQUES",
+    "snippet": "the survey summarizes current limitations—including occlusion challenges, motion blur, models for practical real-time applications and to ...",
+    "host_name": "www.researchgate.net",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://r2hcai.github.io/AAAI-23/files/CameraReadys/21.pdf",
+    "name": "[PDF] Current Limitations and Challenges for Human Pose Estimation",
+    "snippet": "In this paper, we have addressed the limitations and chal- lenges related to operationalizing fairness evaluations in the context of a human-centric vision task ...",
+    "host_name": "r2hcai.github.io",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12031093",
+    "name": "A Survey of the State of the Art in Monocular 3D Human Pose",
+    "snippet": "this survey offers an in-depth discussion on key challenges, particularly depth ambiguity and occlusion issues arising from single-view setups,",
+    "host_name": "pmc.ncbi.nlm.nih.gov",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.softwebsolutions.com/resources/human-pose-estimation",
+    "name": "What is Human pose estimation: Types, challenges and use",
+    "snippet": "Human pose estimation faces hurdles like occlusions, diverse poses, and the need for real-time accuracy. Overcoming these challenges is key to ...",
+    "host_name": "www.softwebsolutions.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://link.springer.com/article/10.1007/s10462-025-11430-4",
+    "name": "A survey on deep learning for 2D and 3D human pose estimation",
+    "snippet": "This survey provides a detailed review of various methods in 2D and 3D human pose estimation … address challenges like occlusions and motion ...",
+    "host_name": "link.springer.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/pdf/2406.19290",
+    "name": "[PDF] Human Modelling and Pose Estimation Overview - arXiv",
+    "snippet": "Monocular cameras [1, 2, 3, 4], commonly utilized due to their affordability, are hindered by limitations such as occlusion and depth ambiguity.",
+    "host_name": "arxiv.org",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dl.acm.org/doi/10.1145/3603618",
+    "name": "Deep Learning-based Human Pose Estimation: A Survey",
+    "snippet": "Human pose estimation aims to locate the human body parts and build human body representation (e.g., body skeleton) from input data such as images and ...",
+    "host_name": "dl.acm.org",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sciencedirect.com/science/article/pii/S0925231225019812",
+    "name": "Real-time human pose estimation and tracking on monocular",
+    "snippet": "Real-time human pose estimation and tracking on monocular videos is a fundamental task in computer vision with a wide range of applications.",
+    "host_name": "www.sciencedirect.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

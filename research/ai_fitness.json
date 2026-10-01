@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12940220",
+    "name": "Clinical Validation of an On-Device AI-Driven Real-Time  - PMC",
+    "snippet": "Pose classification accuracy reached 95.8% vs. physiotherapist assessment (ICC = 0.94). Conclusions: This study provides the first clinical evidence that on- ...",
+    "host_name": "pmc.ncbi.nlm.nih.gov",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://niharpalem.substack.com/p/squat-form-analysis-using-mediapipe",
+    "name": "Squat Form Analysis Using MediaPipe - Nihar's Substack",
+    "snippet": "MediaPipe Pose detects 33 key body landmarks, each with x, y, z coordinates, and a visibility score. These landmarks represent various parts of ...",
+    "host_name": "niharpalem.substack.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://discuss.huggingface.co/t/real-time-exercise-form-analysis-with-mediapipe-looking-for-advice/175699",
+    "name": "Real-time exercise form analysis with MediaPipe , looking for",
+    "snippet": "MediaPipe Pose Landmarker is a good fit because it detects body landmarks in images/video and outputs both image-coordinate landmarks and 3D ... Missing:  OpenPose  | Show results with:",
+    "host_name": "discuss.huggingface.co",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/publication/383605664_A_Machine_Learning_Approach_to_Accurate_Gym_Exercise_Form_Detection_Using_MediaPipe",
+    "name": "A Machine Learning Approach to Accurate Gym Exercise Form",
+    "snippet": "A study using MediaPipe reported 92-96% accuracy for exercise form detection [18] , but this assessed categorical form correctness rather than ... Missing:  OpenPose  | Show results with:",
+    "host_name": "www.researchgate.net",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://reposit.haw-hamburg.de/bitstream/20.500.12738/18683/1/BA_Squat%20Assessment%20using%20Pose%20Estimation_geschw%C3%A4rzt.pdf",
+    "name": "[PDF] Squat Assessment using Pose Estimation",
+    "snippet": "The resulting system increases the accuracy of squat performance feedback, highlighting the potential for automated, real-time assessment in ...",
+    "host_name": "reposit.haw-hamburg.de",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://mindrind.net/building-ai-fitness-app-development",
+    "name": "Building an AI Fitness App: Computer Vision & Pose Estimation",
+    "snippet": "The only data sent to your backend server is the metadata (e.g., “The user completed 15 reps of squats with 90% form accuracy”). This ... Missing:  assessment  OpenPose",
+    "host_name": "mindrind.net",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/6287639/10820123/10902162.pdf",
+    "name": "Real-Time Posture Correction of Squat Exercise - IEEE Xplore",
+    "snippet": "The AI fitness trainer [3] employs. MediaPipe for pose estimation to assess the squats. This classifies squats as good or bad based on side-view ...",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.kaggle.com/competitions/gemini-3/writeups/new-writeup-1765563922467",
+    "name": "AI Fitness Trainer | Kaggle",
+    "snippet": "Works for multiple workouts (squats, curls, push-ups, etc.) 7. Results. Achieved highly accurate pose estimation using MediaPipe. Rep detection accuracy: 92–97% ...",
+    "host_name": "www.kaggle.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]
