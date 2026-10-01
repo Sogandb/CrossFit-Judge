@@ -1,0 +1,56 @@
+[
+  {
+    "url": "https://www.adaptivesecurity.com/blog/deepfake-detection-methods",
+    "name": "Deepfake Detection Methods: Compare Forensic, AI, Audio and",
+    "snippet": "Deepfake detection methods help you assess AI-generated images, video and audio through visual clues, pixel forensics, lip-sync, ... Missing:  cheating  | Show results with:",
+    "host_name": "www.adaptivesecurity.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://nhimg.org/glossary/forensic-deepfake-detection",
+    "name": "What Is Forensic Deepfake Detection? Definition & Examples",
+    "snippet": "Forensic deepfake detection is the process of analysing media for signs of manipulation in a way that can support an evidentiary decision.",
+    "host_name": "nhimg.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://eclipseforensics.com/video-authentication-methods-detecting-tampering-and-verifying-footage-integrity-in-legal-cases",
+    "name": "Detecting Tampering and Verifying Footage Integrity in Legal",
+    "snippet": "Learn how video authentication methods detect tampering, verify originality, and ensure video integrity, helping establish trustworthy ... Missing:  sports  cheating",
+    "host_name": "eclipseforensics.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://blog.ampedsoftware.com/2026/07/28/deepfake-forensics-workflow-for-video-analysis",
+    "name": "Deepfake Forensics Workflow for Video Analysis - Amped Blog",
+    "snippet": "Learn how to assess suspected deepfake videos by combining visual clues, metadata, AI-based detection, geometry and spectral evidence. Missing:  hash  sports  cheating",
+    "host_name": "blog.ampedsoftware.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://lab.witness.org/ticks-or-it-didnt-happen",
+    "name": "WITNESS Media Lab | Ticks or it didn't happen",
+    "snippet": "Amber Video: “Amber Detect uses signal processing and artificial intelligence to identify maliciously-altered audio and video, such as that of deepfakes, and ...",
+    "host_name": "lab.witness.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11359262",
+    "name": "An Anti-Forensics Video Forgery Detection Method Based on",
+    "snippet": "In forensic science, tampered videos can convey inaccurate messages, which mislead the audience. When used in court, tampered video can have ...",
+    "host_name": "pmc.ncbi.nlm.nih.gov",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  }
+]

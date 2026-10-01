@@ -72,3 +72,17 @@ Work Log:
 Stage Summary:
 - Camera: fixed 3/4 view is the official+engineering compromise; dual-camera optional upgrade; per-task view metadata + escalation when required view unavailable
 - Hijab: measure differently, not judge differently — same outcome standards, alternative landmark geometry; parity metric mandatory; privacy = marketing advantage in target market
+
+---
+Task ID: 6
+Agent: main (Super Z)
+Task: Meta-question — what critical questions has the user NOT asked yet; golden insights affecting system accuracy and efficiency
+
+Work Log:
+- Ran 4 grounding searches: clock-visible-in-frame requirement (CONFIRMED official: "A clock must be visible throughout the workout"), CrossFit score appeals process (83 adjustments in 2022, 130+ adjustments/10 appeals in one 2025 review), video tamper forensics, HITL review tooling
+- Synthesized 10 unasked-question golden list in 3 categories: accuracy (clock/time anchoring via OCR + duration cross-check, pre-workout setup verification phase, audio as cross-check signal via ASR on judge count calls, asymmetric error policy = auto-validate only), efficiency (review console IS the product, two-tier cheap-skim + deep-pass processing, declared-score reconciliation routing), operations (formal appeals workflow, business continuity/degraded mode, go/no-go pilot criteria)
+
+Stage Summary:
+- 10 golden unasked topics delivered with official source grounding
+- Top 3 most critical: (1) clock anchoring & time verification, (2) review console UX = real throughput bottleneck, (3) declared-score reconciliation = actual product workflow (verification, not discovery)
+- All prior research JSONs retained in /home/z/my-project/research/ (30+ files, ~60 searches total across 6 task IDs)
