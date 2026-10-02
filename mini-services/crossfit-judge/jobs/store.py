@@ -1,0 +1,194 @@
+"""
+Job store + bounded worker pool.
+
+Fixes the v1 processing-queue flaws (unlimited concurrency, 300 s subprocess
+timeout): the analyzer runs IN-PROCESS inside a ThreadPoolExecutor with a
+hard-bounded worker count; per-job progress is written to SQLite so the UI
+can poll it. Job artifacts live in data/uploads/<job_id>/.
+"""
+from __future__ import annotations
+
+import json
+import queue
+import sqlite3
+import threading
+import time
+import uuid
+from pathlib import Path
+from typing import Optional
+
+from config.settings import (
+    DATA_DIR,
+    DB_PATH,
+    UPLOADS_DIR,
+    WORKER_CONCURRENCY,
+)
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS jobs (
+    id TEXT PRIMARY KEY,
+    created_at REAL NOT NULL,
+    status TEXT NOT NULL,          -- queued|running|done|failed
+    stage TEXT NOT NULL DEFAULT '',
+    progress REAL NOT NULL DEFAULT 0,
+    error_fa TEXT,
+    meta_json TEXT NOT NULL,
+    result_json TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_jobs_created ON jobs(created_at DESC);
+"""
+
+STAGES_FA = {
+    "queued": "در صف پردازش",
+    "running": "در حال پردازش",
+    "done": "تکمیل شد",
+    "failed": "خطا",
+}
+
+
+class JobStore:
+    def __init__(self) -> None:
+        UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        self._lock = threading.Lock()
+        self._db = sqlite3.connect(str(DB_PATH), check_same_thread=False)
+        self._db.execute("PRAGMA journal_mode=WAL")
+        self._db.executescript(SCHEMA)
+        self._db.commit()
+        # worker pool
+        self._q: "queue.Queue[Optional[str]]" = queue.Queue()
+        self._workers = []
+        for i in range(max(1, WORKER_CONCURRENCY)):
+            th = threading.Thread(target=self._worker, name=f"judge-worker-{i}",
+                                  daemon=True)
+            th.start()
+            self._workers.append(th)
+
+    # ------------------------------------------------------------------ #
+    # CRUD
+    # ------------------------------------------------------------------ #
+    def create(self, meta: dict, video_path: str, review_path: str) -> str:
+        job_id = time.strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:8]
+        return self.create_with_id(job_id, meta, video_path, review_path)
+
+    def create_with_id(self, job_id: str, meta: dict, video_path: str,
+                        review_path: str) -> str:
+        with self._lock:
+            self._db.execute(
+                "INSERT INTO jobs (id, created_at, status, stage, progress, meta_json) "
+                "VALUES (?, ?, 'queued', ?, 0, ?)",
+                (job_id, time.time(), STAGES_FA["queued"], json.dumps(meta, ensure_ascii=False)),
+            )
+            self._db.commit()
+        self._q.put(job_id)
+        return job_id
+
+    def get(self, job_id: str) -> Optional[dict]:
+        with self._lock:
+            row = self._db.execute(
+                "SELECT id, created_at, status, stage, progress, error_fa, meta_json "
+                "FROM jobs WHERE id = ?", (job_id,)).fetchone()
+        if not row:
+            return None
+        return {
+            "id": row[0], "created_at": row[1], "status": row[2],
+            "stage_fa": row[3] or "", "progress": row[4], "error_fa": row[5],
+            "meta": json.loads(row[6] or "{}"),
+        }
+
+    def get_result(self, job_id: str) -> Optional[dict]:
+        with self._lock:
+            row = self._db.execute(
+                "SELECT result_json FROM jobs WHERE id = ?", (job_id,)).fetchone()
+        if not row or not row[0]:
+            return None
+        return json.loads(row[0])
+
+    def list(self, limit: int = 50) -> list[dict]:
+        with self._lock:
+            rows = self._db.execute(
+                "SELECT id, created_at, status, stage, progress, error_fa, meta_json "
+                "FROM jobs ORDER BY created_at DESC LIMIT ?", (limit,)).fetchall()
+        out = []
+        for row in rows:
+            meta = json.loads(row[6] or "{}")
+            out.append({
+                "id": row[0], "created_at": row[1], "status": row[2],
+                "stage_fa": row[3] or "", "progress": row[4], "error_fa": row[5],
+                "athlete_name": meta.get("athlete_name") or "",
+                "division": meta.get("division") or "",
+                "wod_id": meta.get("wod_id") or "",
+            })
+        return out
+
+    def _update(self, job_id: str, **fields) -> None:
+        cols, vals = [], []
+        for k, v in fields.items():
+            cols.append(f"{k} = ?")
+            vals.append(v)
+        vals.append(job_id)
+        with self._lock:
+            self._db.execute(f"UPDATE jobs SET {', '.join(cols)} WHERE id = ?", vals)
+            self._db.commit()
+
+    def set_stage(self, job_id: str, stage_fa: str, progress: float) -> None:
+        self._update(job_id, status="running", stage=stage_fa,
+                     progress=max(0.0, min(100.0, progress)))
+
+    def finish(self, job_id: str, result: dict) -> None:
+        self._update(job_id, status="done", stage=STAGES_FA["done"], progress=100,
+                     result_json=json.dumps(result, ensure_ascii=False))
+
+    def fail(self, job_id: str, error_fa: str) -> None:
+        self._update(job_id, status="failed", stage=STAGES_FA["failed"],
+                     error_fa=error_fa)
+
+    # ------------------------------------------------------------------ #
+    # Worker
+    # ------------------------------------------------------------------ #
+    def _worker(self) -> None:
+        while True:
+            job_id = self._q.get()
+            if job_id is None:
+                return
+            try:
+                self._run_job(job_id)
+            except Exception as e:  # noqa: BLE001
+                import traceback
+                traceback.print_exc()
+                self.fail(job_id, f"خطای غیرمنتظره: {e}")
+
+    def _run_job(self, job_id: str) -> None:
+        job = self.get(job_id)
+        if job is None:
+            return
+        meta = job["meta"]
+        wod = self._load_wod(meta.get("wod_id"))
+        if wod is None:
+            self.fail(job_id, "واد مورد نظر یافت نشد")
+            return
+        updir = UPLOADS_DIR / job_id
+        video_path = str(updir / "original.mp4")
+        review_path = str(updir / "review.mp4")
+        from core.analyzer import Analyzer  # late import (heavy deps)
+
+        def progress(stage: str, pct: float) -> None:
+            self.set_stage(job_id, stage, pct)
+
+        job_doc = {"video_path": video_path, "review_path": review_path,
+                   "wod": wod, "meta": meta}
+        outcome = Analyzer(job_doc, progress).run()
+        if outcome.ok:
+            self.finish(job_id, outcome.result)
+        else:
+            self.fail(job_id, outcome.error_fa or "خطای نامشخص")
+
+    @staticmethod
+    def _load_wod(wod_id: Optional[str]) -> Optional[dict]:
+        from config.settings import WODS_DIR
+        if not wod_id:
+            wod_id = "wodx_ladder_wod1"
+        path = Path(WODS_DIR) / f"{wod_id}.json"
+        if not path.exists():
+            return None
+        return json.loads(path.read_text(encoding="utf-8"))

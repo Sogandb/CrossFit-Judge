@@ -1,0 +1,38 @@
+{
+  "_comment": "Movement library registry. status: ACTIVE = fully implemented & calibrated for judging; SKELETON = standards registered, deep implementation pending (returned as 'not yet judgeable' if a WOD references it).",
+  "movements": [
+    { "id": "thruster", "status": "ACTIVE", "label_fa": "تراستر", "label_en": "Thruster", "tier": 1 },
+    { "id": "bar_facing_burpee", "status": "ACTIVE", "label_fa": "بورپی رو به بار", "label_en": "Bar-Facing Burpee", "tier": 1 },
+
+    { "id": "air_squat", "status": "SKELETON", "label_fa": "اسکوات", "label_en": "Air Squat", "tier": 2 },
+    { "id": "front_squat", "status": "SKELETON", "label_fa": "فرونت اسکوات", "label_en": "Front Squat", "tier": 2 },
+    { "id": "back_squat", "status": "SKELETON", "label_fa": "بک اسکوات", "label_en": "Back Squat", "tier": 3 },
+    { "id": "overhead_squat", "status": "SKELETON", "label_fa": "اوورهد اسکوات", "label_en": "Overhead Squat", "tier": 2 },
+    { "id": "shoulder_to_overhead", "status": "SKELETON", "label_fa": "شولدر تو اوورهد", "label_en": "Shoulder-to-Overhead", "tier": 2 },
+    { "id": "push_press", "status": "SKELETON", "label_fa": "پوش پرس", "label_en": "Push Press", "tier": 2 },
+    { "id": "push_jerk", "status": "SKELETON", "label_fa": "پوش جرک", "label_en": "Push Jerk", "tier": 3 },
+    { "id": "clean", "status": "SKELETON", "label_fa": "کلین", "label_en": "Clean", "tier": 2 },
+    { "id": "power_clean", "status": "SKELETON", "label_fa": "پاور کلین", "label_en": "Power Clean", "tier": 2 },
+    { "id": "squat_clean", "status": "SKELETON", "label_fa": "اسکوات کلین", "label_en": "Squat Clean", "tier": 3 },
+    { "id": "snatch", "status": "SKELETON", "label_fa": "اسنچ", "label_en": "Snatch", "tier": 3 },
+    { "id": "deadlift", "status": "SKELETON", "label_fa": "ددلیفت", "label_en": "Deadlift", "tier": 2 },
+    { "id": "sumo_deadlift_high_pull", "status": "SKELETON", "label_fa": "سومو ددلیفت های‌پول", "label_en": "Sumo Deadlift High Pull", "tier": 3 },
+    { "id": "wall_ball", "status": "SKELETON", "label_fa": "وال بال", "label_en": "Wall Ball", "tier": 2 },
+    { "id": "pull_up", "status": "SKELETON", "label_fa": "بارفیکس", "label_en": "Pull-Up", "tier": 2 },
+    { "id": "chest_to_bar_pull_up", "status": "SKELETON", "label_fa": "بارفیکس سینه‌به‌بار", "label_en": "Chest-to-Bar Pull-Up", "tier": 3 },
+    { "id": "jumping_pull_up", "status": "SKELETON", "label_fa": "جامپینگ بارفیکس", "label_en": "Jumping Pull-Up", "tier": 3 },
+    { "id": "toe_to_bar", "status": "SKELETON", "label_fa": "تو-تو-بار", "label_en": "Toe-to-Bar", "tier": 2 },
+    { "id": "knee_raise", "status": "SKELETON", "label_fa": "نی‌ریز", "label_en": "Knee Raise", "tier": 3 },
+    { "id": "push_up", "status": "SKELETON", "label_fa": "شنا", "label_en": "Push-Up", "tier": 2 },
+    { "id": "handstand_push_up", "status": "SKELETON", "label_fa": "شنا سرپا (HSPU)", "label_en": "Handstand Push-Up", "tier": 3 },
+    { "id": "box_jump", "status": "SKELETON", "label_fa": "باکس جامپ", "label_en": "Box Jump", "tier": 2 },
+    { "id": "box_step_up", "status": "SKELETON", "label_fa": "استپ‌آپ روی باکس", "label_en": "Box Step-Up", "tier": 3 },
+    { "id": "lunge", "status": "SKELETON", "label_fa": "لانج", "label_en": "Lunge", "tier": 2 },
+    { "id": "burpee", "status": "SKELETON", "label_fa": "بورپی", "label_en": "Burpee", "tier": 2 },
+    { "id": "double_under", "status": "SKELETON", "label_fa": "دابل‌آندر", "label_en": "Double-Under", "tier": 3 },
+    { "id": "sit_up", "status": "SKELETON", "label_fa": "سیت‌آپ", "label_en": "Sit-Up", "tier": 3 },
+    { "id": "kettlebell_swing", "status": "SKELETON", "label_fa": "کیتل‌بل سوئینگ", "label_en": "Kettlebell Swing", "tier": 3 },
+    { "id": "row", "status": "SKELETON", "label_fa": "روئینگ", "label_en": "Row", "tier": 3 },
+    { "id": "devil_press", "status": "SKELETON", "label_fa": "دویل پرس", "label_en": "Devil Press", "tier": 3 }
+  ]
+}

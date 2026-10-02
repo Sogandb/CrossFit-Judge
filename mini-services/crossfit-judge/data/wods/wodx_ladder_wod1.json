@@ -1,0 +1,36 @@
+{
+  "wod_id": "wodx_ladder_wod1",
+  "name_fa": "نردبان تراستر و بورپی",
+  "name_en": "Thruster & Bar-Facing Burpee Ladder",
+  "source": "Wodx League — video-judge pilot WOD",
+  "format": "FOR_TIME",
+  "format_fa": "برای زمان (با محدودیت زمانی)",
+  "time_cap_sec": 600,
+  "video_max_sec": 900,
+  "description_fa": "به ترتیب انجام شود: ۱۸ تراستر سپس ۱۸ بورپی رو به بار، ۱۵ تراستر سپس ۱۵ بورپی، ۱۲، ۹، ۶ و ۳. زمان استاندارد: ۱۰ دقیقه.",
+  "score_fa": "اگر وادی کامل شود: زمان پایان (کمتر بهتر). اگر در محدودیت زمانی کامل نشود: تعداد رپ‌های تأییدشده تا پایان دقیقه دهم.",
+  "blocks": [
+    { "movement": "thruster", "reps": 18 },
+    { "movement": "bar_facing_burpee", "reps": 18 },
+    { "movement": "thruster", "reps": 15 },
+    { "movement": "bar_facing_burpee", "reps": 15 },
+    { "movement": "thruster", "reps": 12 },
+    { "movement": "bar_facing_burpee", "reps": 12 },
+    { "movement": "thruster", "reps": 9 },
+    { "movement": "bar_facing_burpee", "reps": 9 },
+    { "movement": "thruster", "reps": 6 },
+    { "movement": "bar_facing_burpee", "reps": 6 },
+    { "movement": "thruster", "reps": 3 },
+    { "movement": "bar_facing_burpee", "reps": 3 }
+  ],
+  "tiebreak": null,
+  "per_division": {
+    "default": {
+      "movements": {
+        "thruster": { "weight_kg": null, "note_fa": "وزن بر اساس رده سنی — جدول رده‌ها را ببینید" }
+      }
+    },
+    "_comment": "per_division supports full movement substitution for future WODs, e.g. \"m_18_34_rx\": { \"movements\": { \"thruster\": { \"replace_with\": \"front_squat\", \"weight_kg\": 60 } } }",
+    "weights_verified": false
+  }
+}

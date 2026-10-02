@@ -1,2 +1,23 @@
-skills/
 node_modules/
+.next/
+out/
+build/
+*.log
+.env
+
+# python engine
+mini-services/crossfit-judge/venv/
+mini-services/crossfit-judge/data/models/*.task
+mini-services/crossfit-judge/data/uploads/
+mini-services/crossfit-judge/data/*.db*
+mini-services/crossfit-judge/**/__pycache__/
+.pytest_cache/
+
+# sandbox tooling (not part of the product)
+.zscripts/
+repo-review/
+scripts/
+research/
+tool-results/
+download/
+assets/
