@@ -1,0 +1,56 @@
+[
+  {
+    "url": "https://mmpose.readthedocs.io/en/latest/user_guides/how_to_deploy.html",
+    "name": "Publish Model and Deployment - MMPose's documentation!",
+    "snippet": "In this section, we demonstrate how to export the RTMPose model in ONNX and TensorRT formats. ... ), testing inference speed, and accuracy in the deployment ... Missing:  industrial  edge",
+    "host_name": "mmpose.readthedocs.io",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/open-mmlab/mmpose/issues/2579",
+    "name": "accuracy dropped a lot when converting rtmpose onnx file to",
+    "snippet": "First converting the pytorch model to onnx then converting the onnx model to tensorrt format within triton inference server. Reproduces the ... Missing:  deployment  edge",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/open-mmlab/mmdeploy/blob/main/docs/en/04-supported-codebases/mmpose.md",
+    "name": "mmdeploy/docs/en/04-supported-codebases/mmpose.md at main",
+    "snippet": "[Feature] Support ONNX and TensorRT exportation of RTMO models (#2597) ... For example, the following commands install mmdeploy as well as inference engine - ONNX ... Missing:  edge  | Show results with:",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.forasoft.com/learn/ai-for-video-engineering/articles-ai/openpose-mediapipe-rtmpose-pose-tracking",
+    "name": "OpenPose, MediaPipe Pose, RTMPose, ViTPose - Fora Soft",
+    "snippet": "In surveillance and industrial computer vision, we use RTMPose on Jetson edge boxes for fall detection, fight detection, and ergonomic-risk ...",
+    "host_name": "www.forasoft.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2303.07399v2",
+    "name": "RTMPose: Real-Time Multi-Person Pose Estimation based on",
+    "snippet": "We deploy RTMPose with different inference frameworks (PyTorch, ONNX Runtime, TensorRT, ncnn) and hardwares (i7-11700, GTX1660Ti ... Missing:  edge  | Show results with:",
+    "host_name": "arxiv.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://docs.nvidia.com/deeplearning/tensorrt/latest/getting-started/quick-start-onnx-deployment.html",
+    "name": "Example Deployment Using ONNX — NVIDIA TensorRT",
+    "snippet": "This section walks through converting a pre-trained ResNet-50 model from the ONNX model zoo into a TensorRT engine using the ONNX-TRT parser and ... Missing:  MMPose  RTMPose  industrial",
+    "host_name": "docs.nvidia.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  }
+]

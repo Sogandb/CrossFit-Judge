@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://www.spot.ai/blog/edge-vs-cloud-video-analytics",
+    "name": "Edge vs Cloud Processing for Video Analytics - Spot AI",
+    "snippet": "Edge vs cloud video analytics compares where AI runs. Spot AI explains when to use edge, cloud, or hybrid architectures in manufacturing ...",
+    "host_name": "www.spot.ai",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://catellect.com/blog/edge-ai-vs-cloud-ai-on-device",
+    "name": "Edge AI vs Cloud AI: When Should Intelligence Run On-Device?",
+    "snippet": "Edge AI runs inference on or near the device collecting the data. Cloud AI sends data to remote infrastructure for processing.",
+    "host_name": "catellect.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://videoanalytics.io/edge-ai-vs-cloud-ai-video-analytics.html",
+    "name": "Edge AI vs Cloud AI: Where Should Video Processing Happen?",
+    "snippet": "Edge AI vs cloud AI for video analytics: latency comparison, internet dependency, data sovereignty, cost structure, and when each architecture is the right ...",
+    "host_name": "videoanalytics.io",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.ibm.com/content/adobe-cms/us/en/think/topics/edge-vs-cloud-ai",
+    "name": "Edge AI vs. Cloud AI - IBM",
+    "snippet": "Edge AI processes data locally on small devices, whereas cloud-based AI leverages the compute power of the cloud. Data privacy: Processing data locally rather ... Missing:  athlete  | Show results with:",
+    "host_name": "www.ibm.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.linkedin.com/posts/digitalprocessarchitect_cloud-ai-vs-edge-ai-whats-the-difference-activity-7379156390231126016-5pOc",
+    "name": "Cloud AI vs Edge AI: What's the Difference? | Vaibhav Aggarwal",
+    "snippet": "Privacy Edge AI keeps data local, offering stronger privacy, while Cloud AI transfers data to external servers, raising exposure risks.",
+    "host_name": "www.linkedin.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.coursera.org/articles/edge-ai-vs-cloud-ai",
+    "name": "Edge AI vs. Cloud AI: What Is the Difference? - Coursera",
+    "snippet": "Edge AI processes data directly on the device where it's generated, while cloud AI sends that data to a remote server for processing. Missing:  athlete  | Show results with:",
+    "host_name": "www.coursera.org",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.lumana.ai/blog/edge-ai-vs-cloud-ai-for-video-surveillance-which-architecture-wins-at-100-sites",
+    "name": "Edge AI vs. Cloud AI for Video Surveillance: Which Architecture",
+    "snippet": "Edge devices handle real-time threat detection locally, while. Edge AI detects threats in milliseconds through on-device processing, while ... Missing:  athlete  | Show results with:",
+    "host_name": "www.lumana.ai",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://intechhouse.com/blog/edge-ai-vs-cloud-ai-for-real-time-vision-latency-privacy-bandwidth",
+    "name": "Edge AI vs Cloud AI for Real-Time Vision: Latency, Privacy",
+    "snippet": "Edge AI runs inference on the device itself for low latency and privacy; cloud AI runs it on remote servers for scale and heavy compute. Missing:  athlete  | Show results with:",
+    "host_name": "intechhouse.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

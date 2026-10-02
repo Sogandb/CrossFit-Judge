@@ -1,0 +1,56 @@
+[
+  {
+    "url": "https://arxiv.org/html/2411.00862v1",
+    "name": "A Simple and Effective Temporal Grounding Pipeline for  - arXiv",
+    "snippet": "PaddleOCR performs far better in practice for digital text recognition than other off-the-shelf toolkits such as PyTesseract and EasyOCR. After ...",
+    "host_name": "arxiv.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.forasoft.com/learn/ai-for-video-engineering/articles-ai/paddleocr-text-detection-video",
+    "name": "PaddleOCR For Video — Text Detection Deep-Dive - Fora Soft",
+    "snippet": "PaddleOCR is the open-source optical character recognition toolkit. A video OCR system reads twenty-five to sixty frames per second, each with ... Missing:  digital  sports",
+    "host_name": "www.forasoft.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.springerprofessional.de/en/the-design-of-a-time-watermark-recognition-system-for-forensic-v/52387382",
+    "name": "The Design of a Time Watermark Recognition System for",
+    "snippet": "This study proposes a video image time watermark detection method based on PaddleOCR, which addresses the issue of manual frame-by-frame reading. This study ... Missing:  sports  | Show results with:",
+    "host_name": "www.springerprofessional.de",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/publication/404615294_The_Design_of_a_Time_Watermark_Recognition_System_for_Forensic_Video_Images_Based_on_PaddleOCR",
+    "name": "The Design of a Time Watermark Recognition System for",
+    "snippet": "This study proposes a video image time watermark detection method based on PaddleOCR, which addresses the issue of manual frame-by-frame reading of time ... Missing:  sports  | Show results with:",
+    "host_name": "www.researchgate.net",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pathway.com/framework/blog/paddleocr",
+    "name": "Real-Time OCR with PaddleOCR and Pathway Live Data",
+    "snippet": "PaddleOCR, developed by Baidu, is a robust OCR system that supports advanced algorithms for data generation, model training, and inference. Missing:  digital  video  sports",
+    "host_name": "pathway.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://paddlepaddle.github.io/PaddleX/3.5/en/module_usage/tutorials/ocr_modules/text_recognition.html",
+    "name": "Text Recognition - PaddleX Documentation",
+    "snippet": "The text recognition module is the core component of an OCR (Optical Character Recognition) system, responsible for extracting text information from text ...",
+    "host_name": "paddlepaddle.github.io",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  }
+]

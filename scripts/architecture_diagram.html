@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<style>
+  @font-face {
+    font-family: 'Vazirmatn';
+    src: url('file:///home/z/.fonts/Vazirmatn-Regular.ttf') format('truetype');
+    font-weight: 400;
+  }
+  @font-face {
+    font-family: 'Vazirmatn';
+    src: url('file:///home/z/.fonts/Vazirmatn-Bold.ttf') format('truetype');
+    font-weight: 700;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --text: #111827;
+    --text-sub: #6B7280;
+    --text-muted: #9CA3AF;
+    --bg: #FFFFFF;
+    --border: #E5E7EB;
+    --connector: #94A3B8;
+    --accent: #1B6B7A;
+  }
+
+  body {
+    font-family: 'Vazirmatn', 'DejaVu Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #root { width: fit-content; min-width: 1240px; margin: 0 auto; padding: 44px 40px; background: #FFFFFF; }
+
+  .flow-title {
+    font-size: 24px; font-weight: 700; color: var(--text);
+    text-align: center; margin-bottom: 6px;
+  }
+  .flow-subtitle {
+    font-size: 13.5px; color: var(--text-sub);
+    text-align: center; margin-bottom: 34px;
+  }
+  .flow-subtitle .en { color: var(--text-muted); font-size: 12px; }
+
+  /* ── Phase groups (Layout C) ── */
+  .phase-group {
+    background: #F8FAFC; border-radius: 12px; padding: 16px 20px 18px;
+    width: 1160px; margin: 0 auto;
+  }
+  .phase-title {
+    font-size: 16.5px; font-weight: 700; padding: 9px 16px;
+    border-radius: 8px; margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .phase-title .en-tag {
+    font-size: 11.5px; font-weight: 400; color: #64748B;
+    direction: ltr; letter-spacing: 0.4px;
+  }
+  .phase-steps {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px;
+  }
+  .phase-step {
+    font-size: 13.5px; font-weight: 400; color: var(--text);
+    padding: 9px 13px; background: white; border-radius: 6px;
+    border: 1px solid var(--border);
+    display: flex; align-items: flex-start; line-height: 1.55;
+  }
+  .phase-step .step-num {
+    flex-shrink: 0;
+    display: inline-block; width: 22px; height: 22px; line-height: 22px;
+    text-align: center; border-radius: 50%; font-size: 12px; font-weight: 700;
+    margin-left: 9px; margin-top: 1px;
+  }
+  .phase-step b { font-weight: 700; }
+  .phase-step .sub { color: var(--text-sub); font-size: 12px; }
+
+  /* ── Scheme B: neutral gray base + blue accent progression (7 phases) ── */
+  .phase-1 .phase-title { background: #F8FAFC; color: #334155; border-right: 4px solid #94A3B8; }
+  .phase-1 .step-num { background: #F1F5F9; color: #475569; }
+  .phase-2 .phase-title { background: #F1F5F9; color: #334155; border-right: 4px solid #7B8FA3; }
+  .phase-2 .step-num { background: #E2E8F0; color: #475569; }
+  .phase-3 .phase-title { background: #E8EDF3; color: #2D4156; border-right: 4px solid #6B809A; }
+  .phase-3 .step-num { background: #DBEAFE; color: #2D4156; }
+  .phase-4 .phase-title { background: #E2E8F0; color: #283C52; border-right: 4px solid #5B7590; }
+  .phase-4 .step-num { background: #D0D9E4; color: #283C52; }
+  .phase-5 .phase-title { background: #DAE1EB; color: #23364D; border-right: 4px solid #4B6A87; }
+  .phase-5 .step-num { background: #C7D2E0; color: #23364D; }
+  .phase-6 .phase-title { background: #D2DAE5; color: #1E3048; border-right: 4px solid #3B5F7D; }
+  .phase-6 .step-num { background: #BFC9D8; color: #1E3048; }
+  .phase-7 .phase-title { background: #CAD3E0; color: #192A3E; border-right: 4px solid #2B5473; }
+  .phase-7 .step-num { background: #B7C2D2; color: #192A3E; }
+
+  /* Phase-to-phase arrow */
+  .phase-arrow {
+    text-align: center; color: var(--connector); font-size: 22px;
+    line-height: 1; margin: 6px auto; width: 1160px;
+  }
+  .phase-arrow .arrow-label {
+    display: inline-block; font-size: 11.5px; color: var(--text-sub);
+    background: #F8FAFC; border: 1px solid var(--border); border-radius: 20px;
+    padding: 2px 12px; margin-right: 10px; vertical-align: middle;
+  }
+
+  /* Loop-back note (dashed) */
+  .loopback {
+    width: 1160px; margin: 14px auto 0;
+    border: 1.5px dashed #7B8FA3; border-radius: 10px;
+    background: #F8FAFC; padding: 10px 18px;
+    font-size: 13px; color: #334155;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .loopback .icon {
+    flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+    background: #E2E8F0; color: #283C52; font-size: 15px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+</style>
+</head>
+<body>
+<div id="root">
+  <div class="flow-title">معماری نهایی سیستم دستیار داوری آنلاین کراسفیت</div>
+  <div class="flow-subtitle">خط لوله پردازش هفت‌فازی — از آپلود ویدیو تا تأیید امتیاز و حلقه بهبود مستمر<br><span class="en">Seven-Stage Processing Pipeline &mdash; Final Architecture v1.0</span></div>
+
+  <div class="phase-group phase-1">
+    <div class="phase-title"><span>فاز ۱ — ورودی و اعتبارسنجی اولیه</span><span class="en-tag">Ingestion &amp; Pre-flight</span></div>
+    <div class="phase-steps">
+      <div class="phase-step"><span class="step-num">۱</span><span>آپلود ویدیو همراه <b>امتیاز اعلامی</b> ورزشکار و شناسه واد (DSL)</span></div>
+      <div class="phase-step"><span class="step-num">۲</span><span>چک یکپارچگی: <b>بدون کات و مونتاژ</b>، مدت ویدیو ≈ زمان ادعایی</span></div>
+      <div class="phase-step"><span class="step-num">۳</span><span><b>OCR ساعت</b> درون کادر (PaddleOCR) — لنگر زمانی و تشخیص شروع واد</span></div>
+      <div class="phase-step"><span class="step-num">۴</span><span>فاز صفر تجهیزات: تأیید <b>پلیت‌ها و بار</b> (OCR وزن) و دیده‌شدن تجهیزات</span></div>
+    </div>
+  </div>
+
+  <div class="phase-arrow">↓<span class="arrow-label">ویدیوی پذیرفته‌شده + متادیتا</span></div>
+
+  <div class="phase-group phase-2">
+    <div class="phase-title"><span>فاز ۲ — موتور ادراک (استخوان‌بندی)</span><span class="en-tag">Perception Engine</span></div>
+    <div class="phase-steps">
+      <div class="phase-step"><span class="step-num">۵</span><span><b>RTMW</b> تمام‌بدن — ۱۳۳ لندمارک شامل دست، پا و پروفایل صورت</span></div>
+      <div class="phase-step"><span class="step-num">۶</span><span>هموارسازی زمانی (فیلتر) + درون‌یابی گپ‌های کوتاه انسداد</span></div>
+      <div class="phase-step"><span class="step-num">۷</span><span>ردیابی ساعت هر فریم — همگام‌سازی رپ‌ها با <b>زمان رسمی</b></span></div>
+      <div class="phase-step"><span class="step-num">۸</span><span>کراس‌چک صوتی ASR <span class="sub">(اختیاری — شمارش داور حضوری)</span></span></div>
+    </div>
+  </div>
+
+  <div class="phase-arrow">↓<span class="arrow-label">ردیف لندمارک‌ها + اطمینان + زمان‌برچسب</span></div>
+
+  <div class="phase-group phase-3">
+    <div class="phase-title"><span>فاز ۳ — لایه دانش حرکت (کتابخانه)</span><span class="en-tag">Movement Library</span></div>
+    <div class="phase-steps">
+      <div class="phase-step"><span class="step-num">۹</span><span><b>FSM فازهای حرکت</b> با هیسترزیس — تشخیص چرخه هر تکرار</span></div>
+      <div class="phase-step"><span class="step-num">۱۰</span><span><b>پیشدهای اعتبار خروجی‌محور</b> — مستقل از سبک (کیپ/باترفلای)</span></div>
+      <div class="phase-step"><span class="step-num">۱۱</span><span>قرارداد لندمارک (لازم/ترجیحی) + نمای ترجیحی هر حرکت</span></div>
+      <div class="phase-step"><span class="step-num">۱۲</span><span>طبقه‌بندی تکنیک <span class="sub">(فقط تحلیلی)</span> + پرچم technique_freedom</span></div>
+    </div>
+  </div>
+
+  <div class="phase-arrow">↓<span class="arrow-label">تعریف استاندارد هر حرکت</span></div>
+
+  <div class="phase-group phase-4">
+    <div class="phase-title"><span>فاز ۴ — مفسر واد (زمان اجرا)</span><span class="en-tag">WOD Interpreter</span></div>
+    <div class="phase-steps">
+      <div class="phase-step"><span class="step-num">۱۳</span><span>ارکستریتور FSM سطح واد + قید طلایی <b>«ترتیب انتظاری»</b></span></div>
+      <div class="phase-step"><span class="step-num">۱۴</span><span>حالت‌های <b>TRANSITION</b> با پنجره تأیید + گیت تکمیل رپ</span></div>
+      <div class="phase-step"><span class="step-num">۱۵</span><span>لاگ هر رپ: زمان، اعتبار، دلیل no-rep، اطمینان، کی‌فریم</span></div>
+      <div class="phase-step"><span class="step-num">۱۶</span><span>سیاست خطای نامتقارن: <b>فقط تأیید خودکار</b>؛ no-rep مشکوک → فلگ</span></div>
+    </div>
+  </div>
+
+  <div class="phase-arrow">↓<span class="arrow-label">امتیاز سیستمی + لاگ کامل رپ‌ها</span></div>
+
+  <div class="phase-group phase-5">
+    <div class="phase-title"><span>فاز ۵ — آشتی‌سازی امتیاز اعلامی</span><span class="en-tag">Score Reconciliation</span></div>
+    <div class="phase-steps">
+      <div class="phase-step"><span class="step-num">۱۷</span><span>تطبیق امتیاز اعلامی با شمارش سیستم — <b>تأیید یا رد ادعا</b></span></div>
+      <div class="phase-step"><span class="step-num">۱۸</span><span>مسیریابی دلتا: δ=۰ تأیید سریع / δ کوچک اسپات‌چک / δ بزرگ بازبینی کامل</span></div>
+    </div>
+  </div>
+
+  <div class="phase-arrow">↓<span class="arrow-label">موارد مشکوک و ناسازگار</span></div>
+
+  <div class="phase-group phase-6">
+    <div class="phase-title"><span>فاز ۶ — کنسول بازبینی انسانی</span><span class="en-tag">Review Console</span></div>
+    <div class="phase-steps">
+      <div class="phase-step"><span class="step-num">۱۹</span><span>صف بازبینی <b>اولویت‌دار</b> (دلتا، اطمینان مدل، ریسک حرکت)</span></div>
+      <div class="phase-step"><span class="step-num">۲۰</span><span>پخش فریم‌به‌فریم + overlay اسکلت + کلیدهای میان‌بر سریع</span></div>
+      <div class="phase-step"><span class="step-num">۲۱</span><span>تصمیم نهایی داور: تأیید / رد رپ‌ها + یادداشت مستند</span></div>
+      <div class="phase-step"><span class="step-num">۲۲</span><span>ثبت برای فرایند <b>appeal</b> — امکان بازپخش کامل تصمیم‌ها</span></div>
+    </div>
+  </div>
+
+  <div class="phase-arrow">↓<span class="arrow-label">برچسب‌های طلایی داور</span></div>
+
+  <div class="phase-group phase-7">
+    <div class="phase-title"><span>فاز ۷ — حلقه داده و بهبود مستمر</span><span class="en-tag">Data Flywheel</span></div>
+    <div class="phase-steps">
+      <div class="phase-step"><span class="step-num">۲۳</span><span><b>دیتاست طلایی</b> — ویدیوهای Open عمومی + ورزشکاران متنوع و محجبه</span></div>
+      <div class="phase-step"><span class="step-num">۲۴</span><span>متریک‌ها: OBO / MAE، no-rep F1، تطابق امتیاز، <b>شکاف انصاف</b></span></div>
+      <div class="phase-step"><span class="step-num">۲۵</span><span>کالیبراسیون آستانه‌ها + تست جفت‌حرکات با ورزشکار <b>خسته</b></span></div>
+      <div class="phase-step"><span class="step-num">۲۶</span><span>نسخه‌بندی استانداردها و مدل‌ها — فریز قبل از هر ایونت</span></div>
+    </div>
+  </div>
+
+  <div class="loopback">
+    <span class="icon">↺</span>
+    <span>حلقه بازخورد: برچسب‌های تأییدشده داوران به دیتاست طلایی افزوده می‌شود و مدل‌ها، آستانه‌ها و کتابخانه حرکات (فازهای ۲ و ۳) را در چرخه بعدی بهبود می‌بخشد.</span>
+  </div>
+</div>
+</body>
+</html>
