@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://librosa.org/doc/main/auto_tutorials/01-intro/05-onsets.html",
+    "name": "Onset detection — librosa 1.0.0 documentation",
+    "snippet": "This section introduces the problem of detecting musical onsets, and the underlying methods for computing an onset strength envelope. Missing:  dominant  classification  beeps",
+    "host_name": "librosa.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://librosa.org/doc/0.11.0/tutorial.html",
+    "name": "Tutorial — librosa 0.11.0 documentation",
+    "snippet": "This section covers the fundamentals of developing with librosa, estimating tempo and detecting beat events. includes functions to load audio from disk, ... Missing:  dominant  classification  beeps",
+    "host_name": "librosa.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://stackoverflow.com/questions/65110321/remove-offset-in-sound-beeps-detection-by-librosa-onset-detect-in-python",
+    "name": "Remove offset in Sound Beeps Detection by librosa.onset",
+    "snippet": "The onsets are usually clear with sound level multiple times that of background. The time interval between them can be 100ms 250ms or 500ms. Missing:  dominant  frequency  classification",
+    "host_name": "stackoverflow.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@noorfatimaafzalbutt/librosa-a-comprehensive-guide-to-audio-analysis-in-python-3f74fbb8f7f3",
+    "name": "LibROSA: A Comprehensive Guide to Audio Analysis in Python",
+    "snippet": "LibROSA offers methods for onset detection based on various criteria, including energy, spectral flux, and novelty. Time-Frequency Decomposition ... Missing:  dominant  beeps",
+    "host_name": "medium.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://librosa.org/doc/dev/api/generated/librosa.onset.onset_detect.html",
+    "name": "librosa.onset.onset_detect — librosa 1.0.0 documentation",
+    "snippet": "Onset detection librosa.onset.onset_detect. Locate note onset events by picking peaks in an onset strength envelope. audio time-series. Missing:  dominant  classification  beeps  python",
+    "host_name": "librosa.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.kaggle.com/code/ashkhagan/audio-signal-processing-librosa/notebook?scriptVersionId=38441994",
+    "name": "Audio Signal Processing:Librosa - Kaggle",
+    "snippet": "Librosa is a Python package for music and audio processing by Brian McFee. It transforms our time-domain signal into the frequency domain. high frequency ... Missing:  beeps  | Show results with:",
+    "host_name": "www.kaggle.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.linkedin.com/pulse/exploring-librosa-comprehensive-guide-audio-feature-extraction-m",
+    "name": "A Comprehensive Guide to Audio Feature Extraction from WAV",
+    "snippet": "Onset Detection: Librosa includes onset detection algorithms to identify the timing of musical events within audio. Installation: You can ...",
+    "host_name": "www.linkedin.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://librosa.org/doc/main/api/core.html",
+    "name": "Core functionality — librosa 1.0.0 documentation",
+    "snippet": "Librosa is a python package for music and audio analysis. It provides the building blocks necessary to create audio retrieval systems. Core functionality ( ...",
+    "host_name": "librosa.org",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

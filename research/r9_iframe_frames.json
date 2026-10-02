@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://stackoverflow.com/questions/56299995/youtube-player-api-get-screenshot",
+    "name": "Youtube Player Api Get Screenshot - javascript - Stack Overflow",
+    "snippet": "Download the video and use something like FFMPEG to extract the frame, use a screenshot-api service pass it the embed URL as the page to ... Missing:  programmatically  | Show results with:",
+    "host_name": "stackoverflow.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://screenshotneo.com/blog/youtube-screenshot-api",
+    "name": "How to Use a YouTube Screenshot API - ScreenshotNeo",
+    "snippet": "Capture an exact frame with browser automation. The IFrame Player API lets you embed a YouTube player and control it with JavaScript, including ... Missing:  programmatically  | Show results with:",
+    "host_name": "screenshotneo.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.yepapi.com/youtube-api/screenshot",
+    "name": "YouTube Screenshot API - Frame at Timestamp - YepAPI",
+    "snippet": "YouTube video screenshot API — capture frames at any timestamp. Generate thumbnails, previews, and visual summaries programmatically from $0.01/call. Missing:  IFrame  | Show results with:",
+    "host_name": "www.yepapi.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/EnragedAntelope/youtube-screenshot-extractor/blob/main/youtube-screenshot-script.py",
+    "name": "youtube-screenshot-script.py - GitHub",
+    "snippet": "Extract high-quality frames from YouTube (and 1000+ other sites) or local video — auto quality/blur filtering, black-bar removal, scene detection, ...",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/ismail-benali/i-built-a-browser-based-youtube-frame-extractor-no-ffmpeg-required-3f4a",
+    "name": "I Built a Browser-Based YouTube Frame Extractor (No FFmpeg",
+    "snippet": "Instead of downloading the video again, the script captures frames that the browser is already rendering. YouTube Video ↓ Capture Frames",
+    "host_name": "dev.to",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/youtubedl/comments/1u8gllq/whats_the_best_way_to_extract_screenshots_from",
+    "name": "What's the best way to extract screenshots from YouTube",
+    "snippet": "I'm looking for a reliable method to grab high-quality screenshots from YouTube videos — ideally at specific moments rather than just random ... Missing:  IFrame  API  programmatically",
+    "host_name": "www.reddit.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://developers.google.com/youtube/iframe_api_reference",
+    "name": "YouTube Player API Reference for iframe Embeds",
+    "snippet": "The IFrame player API lets you embed a YouTube video player on your website and control the player using JavaScript. Missing:  programmatically  | Show results with:",
+    "host_name": "developers.google.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@alain.nunez55/using-the-youtube-iframe-player-api-b72a65294d17",
+    "name": "Using the YouTube iFrame Player API | by Alain Nunez - Medium",
+    "snippet": "The YT.Player object will create a video player iFrame element on your page, returning a manipulatable object. Get Alain Nunez's stories in your ...",
+    "host_name": "medium.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://vidkraken.com/blog/youtube-data-api-download-video",
+    "name": "Can the YouTube Data API Download Videos? (No — Here's",
+    "snippet": "Short answer: no. The official YouTube Data API v3 cannot download video or audio files. If you've been digging through the docs looking for a \"download\" ...",
+    "host_name": "vidkraken.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.charj.it/blog/youtube-data-api-vs-download-api",
+    "name": "The YouTube Data API cannot download videos - Charjit",
+    "snippet": "The YouTube Data API returns metadata and never video files. One endpoint for video, audio, and metadata. YouTube Data API v3 returns a video ...",
+    "host_name": "www.charj.it",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://stackoverflow.com/questions/74554377/can-mp4-files-be-pulled-from-the-youtube-data-api",
+    "name": "Can mp4 files be pulled from the YouTube Data API?",
+    "snippet": "Unfortunately there isn't any YouTube Data API v3 Videos: download endpoint as there is the Captions: download one. Missing:  metadata  | Show results with:",
+    "host_name": "stackoverflow.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://developers.google.com/youtube/v3/docs/errors",
+    "name": "YouTube Data API - Errors - Google for Developers",
+    "snippet": "This error occurs if the videoId parameter identifies an actual video, but the id parameter either identifies caption track IDs that don't exist or track IDs ...",
+    "host_name": "developers.google.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/youtubedl/comments/1od2ocj/youtube_error_unable_to_download_video_data_http",
+    "name": "unable to download video data: HTTP Error 403: Forbidden",
+    "snippet": "This is a known issue. yt-dlp can currently fetch metadata and subtitles from YouTube but fails to actually download individual video streams, ...",
+    "host_name": "www.reddit.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://fast.io/resources/metadata-extraction-from-youtube-videos",
+    "name": "Extract Metadata from YouTube Videos: 4 Methods (2026) | Fastio",
+    "snippet": "Learn four methods to extract YouTube video metadata: the Data API v3, yt-dlp CLI, Python scripts, and browser tools.",
+    "host_name": "fast.io",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/agenthustler/how-to-scrape-youtube-in-2026-videos-channels-comments-and-metadata-27pn",
+    "name": "How to Scrape YouTube in 2026: Videos, Channels",
+    "snippet": "How to Scrape YouTube in 2026: Videos, Channels, Comments, and Metadata · What YouTube Data Can You Extract? · Method 1: YouTube Data API v3.",
+    "host_name": "dev.to",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.facebook.com/groups/1730218028048253/posts/1748130832923639",
+    "name": "youtube api error with video description - Facebook",
+    "snippet": "I'm fetching data from Youtube Data API v3. All is working well i.e Playlists,PlaylistsItems list, CommentThread list. When ever i Insert ...",
+    "host_name": "www.facebook.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]
