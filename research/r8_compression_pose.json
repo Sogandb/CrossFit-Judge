@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://signalprocessingsociety.org/publications-resources/ieee-transactions-multimedia/2023/04/fast-human-pose-estimation-compressed",
+    "name": "Fast Human Pose Estimation in Compressed Videos",
+    "snippet": "in this paper, we propose a novel fast framework for human pose estimation to meet the real-time inference with controllable accuracy degradation in compressed ... Missing:  bitrate  | Show results with:",
+    "host_name": "signalprocessingsociety.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/publication/364257323_Effect_of_Compressed_Sensing_Rates_and_Video_Resolutions_on_a_PoseNet_Model_in_an_AIoT_System",
+    "name": "Effect of Compressed Sensing Rates and Video Resolutions on a",
+    "snippet": "CS rates from 100% to 50%, we found that the higher the video resolution, the lower the pose score. At the CS rate of 80%, we could reduce data ...",
+    "host_name": "www.researchgate.net",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pubmed.ncbi.nlm.nih.gov/26829774",
+    "name": "Human Pose Estimation from Video and IMUs - PubMed",
+    "snippet": "In this work, we present an approach to fuse video with sparse orientation data obtained from inertial sensors to improve and stabilize full-body human motion ... Missing:  compression  bitrate",
+    "host_name": "pubmed.ncbi.nlm.nih.gov",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.biorxiv.org/content/10.1101/457242v1.full.pdf",
+    "name": "[PDF] On the inference speed and video-compression robustness of",
+    "snippet": "Increased accuracy can likely be achieved by training and evaluating on videos compressed in the same manner. Second, the jitter observed at ... Missing:  study  | Show results with:",
+    "host_name": "www.biorxiv.org",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ieeexplore.ieee.org/iel8/6287639/11323511/11646595.pdf",
+    "name": "PoseCodec: Specialized Human Action Compression via Pose",
+    "snippet": "We present PoseCodec, a compression framework specifically designed for human action video that reduces the pixel stream to a structured, low- ...",
+    "host_name": "ieeexplore.ieee.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2110.07235v2",
+    "name": "A Human-Centric Multimodal Dataset for Motions & Immersive Media",
+    "snippet": "We benchmark HUMAN4D with respect to pose estimation and volumetric video compression by applying state-of-the-art approaches of the respective fields. In ...",
+    "host_name": "arxiv.org",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mdpi.com/2076-3417/12/19/9938",
+    "name": "Effect of Compressed Sensing Rates and Video Resolutions on a",
+    "snippet": "When only considering the meaningful range of CS rates from 100 % to 50 % , we found that the higher the video resolution, the lower the pose score.",
+    "host_name": "www.mdpi.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.studocu.com/in/document/pimpri-chinchwad-college-of-engineering/computer-engineering/fast-human-pose-estimation-in-co-mpressed-videos/43464556",
+    "name": "Fast Human Pose Estimation in Compressed Video Streams (MATH",
+    "snippet": "This article presents a novel framework for human pose estimation in compressed videos, merging per-frame and warping methods.",
+    "host_name": "www.studocu.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

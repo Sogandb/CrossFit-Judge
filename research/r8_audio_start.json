@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://www.researchgate.net/publication/221368635_Audio-Based_Event_Detection_for_Sports_Video",
+    "name": "Audio-Based Event Detection for Sports Video - ResearchGate",
+    "snippet": "In this paper, we present an audio-based event detection ap- proach shown to be eective when applied to the Sports broadcast data. Missing:  countdown  | Show results with:",
+    "host_name": "www.researchgate.net",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/1605.02401v3",
+    "name": "Audio Event Detection using Weakly Labeled Data - arXiv",
+    "snippet": "In this paper can help in removing the time consuming and expensive process of manually annotating data to facilitate fully supervised learning.",
+    "host_name": "arxiv.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.semanticscholar.org/paper/Creating-audio-keywords-for-event-detection-in-Xu-Maddage/8ca64886db2ae43752a3320feb3f451a9c47e9db",
+    "name": "Creating audio keywords for event detection in soccer video",
+    "snippet": "audio keyword is an effective representation that is able to achieve more intuitionistic result for event detection in sports video Missing:  countdown  spotting",
+    "host_name": "www.semanticscholar.org",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://developers.google.com/edge/mediapipe/solutions/audio/audio_classifier",
+    "name": "Audio classification guide | Google AI Edge",
+    "snippet": "Yamnet model (recommended). The Yamnet model is an audio event classifier trained on the AudioSet dataset to predict audio events defined in the AudioSet data. Missing:  countdown  beep  timer  sports  video  keyword  spotting",
+    "host_name": "developers.google.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.geeksforgeeks.org/deep-learning/audio-classification-using-googles-yamnet",
+    "name": "Audio Classification Using Google's YAMnet - GeeksforGeeks",
+    "snippet": "YAMNet is a pre-trained deep neural network designed to categorize audio into numerous specific events. 521 distinct audio event categories.",
+    "host_name": "www.geeksforgeeks.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.scitepress.org/Papers/2026/145852/145852.pdf",
+    "name": "[PDF] Multi-Modal Highlight Detection in Broadcast Audio - SciTePress",
+    "snippet": "This paper presents a benchmark of models for highlight detection in broadcast audio, combining high-level semantic audio features (YAMNet) yamnet audio ... Missing:  countdown  | Show results with:",
+    "host_name": "www.scitepress.org",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.tensorflow.org/tutorials/audio/transfer_learning_audio",
+    "name": "Transfer learning with YAMNet for environmental sound",
+    "snippet": "YAMNet is a pre-trained deep neural network that can predict audio events from 521 classes, such as laughter, barking, or a siren. Missing:  countdown  timer  sports  keyword  spotting",
+    "host_name": "www.tensorflow.org",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://aws.amazon.com/blogs/machine-learning/detect-audio-events-with-amazon-rekognition",
+    "name": "Detect audio events with Amazon Rekognition - AWS",
+    "snippet": "Media workloads are a good fit for this technique, for example to detect when a referee's whistle is blown in a sports video. This post ...",
+    "host_name": "aws.amazon.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

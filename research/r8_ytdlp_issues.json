@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://github.com/yt-dlp/yt-dlp/issues/17368",
+    "name": "Unreliable YouTube DASH downloads with cookies and PO",
+    "snippet": "The command can remain stuck in BotGuard / PO Token generation for several minutes. Updating from yt-dlp stable to the latest nightly and ... Missing:  2025  | Show results with:",
+    "host_name": "github.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/selfhosted/comments/1wnx6fx/how_are_you_handling_youtube_bot_detection_with",
+    "name": "How are you handling YouTube bot detection with yt-dlp on a",
+    "snippet": "Is there currently a reliable way to use yt-dlp from a cloud server without getting the bot-detection page? Are PO Tokens / JS challenge solving ... Missing:  2025  | Show results with:",
+    "host_name": "www.reddit.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/yt-dlp/yt-dlp/issues/13067",
+    "name": "YouTube video download fails due to bot detection yt-dlp issue",
+    "snippet": "I suspect YouTube is detecting the tool's server IP or user agent as automated traffic. Has anyone encountered this issue? Any workarounds or ... Missing:  token  | Show results with:",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://vidkraken.com/blog/yt-dlp-sign-in-to-confirm-not-a-bot",
+    "name": "yt-dlp: \"Sign in to confirm you're not a bot\"",
+    "snippet": "This started appearing far more often in 2024–2025 as YouTube ramped up bot detection, and it's now one of the most common yt-dlp failures. Here's what ... Missing:  issues  | Show results with:",
+    "host_name": "vidkraken.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://renderio.dev/blogs/ytdlp-geo-block-pot-cookies",
+    "name": "Why yt-dlp Keeps Breaking: Geo-Blocks, PO Tokens  - Renderio",
+    "snippet": "You can fix geo-blocks today and find that the IP pool you're using gets flagged next week. You can patch PO token support and find that YouTube ...",
+    "host_name": "renderio.dev",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://forum.getassist.net/threads/how-to-solve-yt-dlp-sign-in-to-confirm-youre-not-a-bot-issue.5028",
+    "name": "How to solve yt-dlp sign in to confirm youre not a bot issue?",
+    "snippet": "Datacenter IPs are frequently flagged by YouTube's bot detection system. Switch to your regular ISP connection and retry the download command.",
+    "host_name": "forum.getassist.net",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/yt-dlp/yt-dlp/issues/14642",
+    "name": "Can't Download Youtube · Issue #14642 · yt-dlp/yt-dlp - GitHub",
+    "snippet": "I've exported cookies, but can't figure out how to actually get the video downloaded. Any ideas ? Provide verbose output that clearly ... Missing:  bot  | Show results with:",
+    "host_name": "github.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://lib.rs/crates/bgutil-ytdlp-pot-provider",
+    "name": "bgutil-ytdlp-pot-provider — Rust utility // Lib.rs",
+    "snippet": "A high-performance YouTube POT (Proof-of-Origin Token) provider implemented in Rust, designed to help yt-dlp bypass the \"Sign in to confirm you're not a bot\" ...",
+    "host_name": "lib.rs",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

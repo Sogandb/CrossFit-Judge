@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://www.reddit.com/r/youtubedl/comments/1kcaeb8/how_can_i_avoid_ip_bans_or_rate_limits_when",
+    "name": "How can I avoid IP bans or rate limits when downloading  - Reddit",
+    "snippet": "If I download too many videos in a short time—or if I try to grab longer videos (30+ minutes)—YouTube starts asking me to sign in, or it blocks ... Missing:  server  | Show results with:",
+    "host_name": "www.reddit.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=_SllUkyc7UQ",
+    "name": "yt-dlp Rate Limit Fix: Download Without Getting Blocked - YouTube",
+    "snippet": "Are YouTube throttling your yt-dlp downloads? This guide shows you how to fix slow download youtube video speeds. Missing:  server  IP",
+    "host_name": "www.youtube.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/Chocobozzz/PeerTube/issues/5688",
+    "name": "yt-dlp rate limit · Issue #5688 · Chocobozzz/PeerTube - GitHub",
+    "snippet": "Youtube will likely blacklist any IP that mass downloads videos at this point. I don't know if using a proxy is the solution. It's a bandaid. Missing:  blocked  | Show results with:",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://proxycove.com/en/blog/proxy-ytdlp-download-youtube-bypass",
+    "name": "Proxy for yt-dlp: download videos from YouTube without restrictions.",
+    "snippet": "YouTube aggressively blocks data center IP addresses — server addresses are recognized almost instantly. ... Download speed limit, 1–5 MB/s ...",
+    "host_name": "proxycove.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@DataBeacon/how-to-tackle-yt-dlp-challenges-in-ai-scale-scraping-8b78242fedf0",
+    "name": "How to Tackle yt-dlp Challenges in AI-Scale Scraping | by DataBeacon",
+    "snippet": "Discover proven strategies to bypass yt-dlp rate limits, prevent IP bans, and scale your YouTube video scraping for AI training datasets.",
+    "host_name": "medium.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/pickuma/yt-dlp-the-cli-video-downloader-developers-actually-use-in-2026-57jk",
+    "name": "yt-dlp: The CLI Video Downloader Developers Actually Use in 2026",
+    "snippet": "Hitting YouTube with --concurrent-fragments 16 from a single IP will get you throttled or temporarily blocked. For unattended jobs, throttle ...",
+    "host_name": "dev.to",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/yt-dlp/yt-dlp/issues/7716",
+    "name": "Youtube download limited to 25 kb/s · Issue #7716 · yt-dlp  - GitHub",
+    "snippet": "My personal IP was banned in the past, because I was downloading 4-5 videos at the same time, even if I was limiting the download speed to 500 ... Missing:  rate  | Show results with:",
+    "host_name": "github.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.tbd.yt/blog/yt-dlp-http-error-403-429",
+    "name": "yt-dlp: HTTP Error 403, 429, and downloads that crawl - TBD",
+    "snippet": "No error. The download simply crawls at roughly the video's playback rate. This is not 403 or 429. It is YouTube's throttling, applied when the ...",
+    "host_name": "www.tbd.yt",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

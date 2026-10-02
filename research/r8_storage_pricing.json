@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://dev.to/devopsdaily/free-egress-has-fine-print-s3-vs-r2-b2-wasabi-and-more-ghf",
+    "name": "Free Egress Has Fine Print: S3 vs R2, B2, Wasabi and More",
+    "snippet": "Cloudflare R2 costs about $62. Backblaze B2 $6.95 per TB Free up to 3x stored, store B2's egress is free \"up to 3x their average monthly ...",
+    "host_name": "dev.to",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://onidel.com/blog/cloudflare-r2-vs-backblaze-b2",
+    "name": "Cloudflare R2 vs Backblaze B2 vs Wasabi vs Amazon S3 in 2025",
+    "snippet": "Storage Costs (per GB/month) · Wasabi: $0.0049 (with 90-day minimum storage commitment) · Backblaze B2: $0.006 · Cloudflare R2: $0.015 · Amazon S3: ...",
+    "host_name": "onidel.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://swarmify.com/blog/video-hosting-egress-pricing-compared",
+    "name": "Video Egress Pricing: Wasabi, B2, R2 & S3 (2026) - Swarmify",
+    "snippet": "Backblaze B2 starts at $6.95/TB/month and includes egress up to 3× average monthly storage. Cloudflare R2 charges no egress fee for data ... Missing:  2025  | Show results with:",
+    "host_name": "swarmify.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://datastorage.com/articles/cloudflare-r2-vs-backblaze-b2-vs-wasabi-the-zero-egress-showdown",
+    "name": "Cloudflare R2 vs Backblaze B2 vs Wasabi: The Zero-Egress",
+    "snippet": "The three zero-egress storage leaders compared on pricing, performance, API depth, and fine print. Which one fits which workload in 2026.",
+    "host_name": "datastorage.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://tech-insider.org/cloudflare-r2-vs-s3-vs-backblaze-b2-2026",
+    "name": "Cloudflare R2 vs S3 vs Backblaze B2: $0 Egress [2026]",
+    "snippet": "At $15 versus S3's $919, R2 is roughly 60x cheaper. Backblaze is competitive at $77 – and effectively free to serve if you front B2 with ...",
+    "host_name": "tech-insider.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://costnimbus.com/calculators/storage",
+    "name": "S3 vs R2 vs Backblaze B2 Storage Calculator | Cost Nimbus",
+    "snippet": "Cloudflare R2's zero-egress model saves most teams 60–80% vs S3. Backblaze B2 $11.37/mo Saves $48.53/mo vs S3(81% off) Egress Impact S3 egress cost$36.00 R2. ... Missing:  2025  | Show results with:",
+    "host_name": "costnimbus.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.backblaze.com/blog/backblaze-performance-stats-for-q3-2025",
+    "name": "Backblaze Performance Stats for Q3 2025 | Cloud Benchmarks",
+    "snippet": "AWS S3 leads across the board on this test, with Backblaze B2 taking second and Cloudflare R2 taking third consistently. And, it's worth ...",
+    "host_name": "www.backblaze.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.flowverify.co/blog/cloudflare-r2-vs-s3-vs-backblaze-b2-cost-breakdown",
+    "name": "Cloudflare R2 vs S3 vs Backblaze B2: cost breakdown",
+    "snippet": "R2 charges $0.015 per GB for Standard storage, about 35% cheaper than S3. Egress to the internet is genuinely zero. Operations split into two ... Missing:  2025  | Show results with:",
+    "host_name": "www.flowverify.co",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]
