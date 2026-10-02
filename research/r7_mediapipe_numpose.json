@@ -1,0 +1,56 @@
+[
+  {
+    "url": "https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker",
+    "name": "Pose landmark detection guide | Google AI Edge",
+    "snippet": "The MediaPipe Pose Landmarker task lets you detect landmarks of human bodies in an image or video. You can use this task to identify key body locations, ...",
+    "host_name": "developers.google.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/google-ai-edge/mediapipe/issues/5274",
+    "name": "Multiple Person Pose Detection · Issue #5274 - GitHub",
+    "snippet": "To detect multiple people, set num_poses to the max number of people you want to detect in the PoseLandmarkerOptions . Its default value is 1. Missing:  limitations  | Show results with:",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ai.google.dev/edge/api/mediapipe/python/mp/tasks/vision/PoseLandmarkerOptions",
+    "name": "mp.tasks.vision.PoseLandmarkerOptions",
+    "snippet": "PoseLandmarker has three running modes: 1) The image mode for detecting pose landmarks on single image inputs. ... The maximum number of poses can be detected by ... Missing:  limitations  | Show results with:",
+    "host_name": "ai.google.dev",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/google-ai-edge/mediapipe/issues/5842",
+    "name": "Raise a warning/exception when num_poses>1 for Pose",
+    "snippet": "When a Pose Landmarker is initialized with options, num_poses can be provided to specify the maximum number of persons in the image, but the ... Missing:  limitations  | Show results with:",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker/python",
+    "name": "Pose landmark detection guide for Python | Google AI Edge",
+    "snippet": "The MediaPipe Pose Landmarker task lets you detect landmarks of human bodies in an image or video. You can use this task to identify key ... Missing:  limitations  | Show results with:",
+    "host_name": "developers.google.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://stackoverflow.com/questions/78270783/issue-with-tracking-multiple-persons-on-mediapipe",
+    "name": "Issue with tracking multiple persons on mediapipe",
+    "snippet": "Pose Landmarker from mediapipe cannot detect multiple people in a single image. Even though you can set the num_poses parameter in options, ...",
+    "host_name": "stackoverflow.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  }
+]

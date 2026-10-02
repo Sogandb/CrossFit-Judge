@@ -1,0 +1,56 @@
+[
+  {
+    "url": "https://www.reddit.com/r/videography/comments/16vecbj/iphone_variable_frame_rate_vfr_footage_and_what",
+    "name": "iPhone variable frame rate (VFR) footage and what we can do.",
+    "snippet": "I recently picked up an iPhone 15 Pro and plan on using it as a B-cam because of the really good new log profile. Missing:  OpenCV  python  timestamp",
+    "host_name": "www.reddit.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://stackoverflow.com/questions/62521133/video-from-images-with-variable-frame-rate",
+    "name": "Video from images with variable frame rate - Stack Overflow",
+    "snippet": "OpenCV does not provide the ability to create variable FPS videos as far. You can achieve this by writing timestamps to a file separately from ...",
+    "host_name": "stackoverflow.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://forum.opencv.org/t/vfr-variable-frame-rate-check/20612",
+    "name": "VFR (Variable Frame Rate) check - videoio - OpenCV Forum",
+    "snippet": "With what accuracy does this method return the timestamps of each frame? Can it be used to analyze VFR (Variable Frame Rate) video files?",
+    "host_name": "forum.opencv.org",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://discussions.apple.com/thread/256077798",
+    "name": "How can I fix frame rate issues in third- - Apple Community",
+    "snippet": "The system seems to override settings, forcing variable frame rate (VFR) in recordings, which causes issues in post-production (desync, ...",
+    "host_name": "discussions.apple.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://forum.shotcut.org/t/4-k-recording-from-iphone-this-file-is-variable-frame-rate/32544",
+    "name": "4 K recording from iphone This file is variable frame rate?",
+    "snippet": "the issue with a variable frame rate (VFR) is that the Timeline (Video Mode) requires a constant frame rate (CFR). This becomes particularly ... Missing:  OpenCV  python  timestamp",
+    "host_name": "forum.shotcut.org",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/Breakthrough/PySceneDetect/issues/168",
+    "name": "Overhaul Timecode APIs (VFR support) · Issue #168 - GitHub",
+    "snippet": "PyAV is the only input backend that can reliably handle VFR video timestamps. The default OpenCV backend may still work, but accuracy may be ...",
+    "host_name": "github.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -86,3 +86,22 @@ Stage Summary:
 - 10 golden unasked topics delivered with official source grounding
 - Top 3 most critical: (1) clock anchoring & time verification, (2) review console UX = real throughput bottleneck, (3) declared-score reconciliation = actual product workflow (verification, not discovery)
 - All prior research JSONs retained in /home/z/my-project/research/ (30+ files, ~60 searches total across 6 task IDs)
+
+---
+Task ID: 7
+Agent: main (Super Z)
+Task: Review user's initial CrossFit-Judge v1 implementation (github.com/Sogandb/CrossFit-Judge) against the 6-session agreed architecture + fresh research; deliverables = review-only report (NO code changes), per user instruction
+
+Work Log:
+- Cloned repo to /home/z/my-project/repo-review; read 100% of Python service (24 files: main, worker, config, core, 7 movements, scorer, reporting, utils, tests) + key frontend files (page.tsx, 9 crossfit components, api client, python-server, proxy route)
+- Set up runtime: installed mediapipe/opencv/fastapi/etc in venv, downloaded pose_landmarker_full model
+- Ran project self-test (all 3 critical tests PASS); wrote /home/z/my-project/scripts/verify_bugs.py to test 4 suspected findings — ALL CONFIRMED: (1) KettlebellSwing FSM dead (4.0-degree hysteresis applied to 0-1 ratio signal -> stuck in IDLE forever, 0 reps from 6 full swings; Burpee overrides classifier, KB does not), (2) For Time score = full video duration (114s work in 600s video -> 10:00), (3) Tabata counts rest-window reps (20 reps counted), (4) no_rep_reason_fa/en fields semantically swapped (English text in fa field, snake_case key in en field; frontend prefers en -> raw key shown)
+- Ran 13 fresh web searches saved to research/r7_*.json (~80 results): PubMed (2D frontal-plane knee angle validity r~0.20), Frontiers (squat projection bias), official CrossFit Games (2026 rulebook clock-visible rule, video review best practices, real 25.1 = lateral burpees over DB), AMRAP score = rounds+reps convention, Tabata 20/10 protocol, EMOM semantics, MediaPipe num_poses multi-person limits, PyAV VFR timestamp issue, FastAPI CPU-bound queue best practices, BlazePose vs RTMPose/RTMW benchmarks, FSM+hysteresis rep counting standard
+- Built compliance matrix of 29 agreed components across 3 layers: 7 present / 3 partial / 19 absent (Layer1 ~56%, Layer2 ~18%, Layer3 ~22%)
+- Additional findings: sequencer fragility (no TRANSITION/guard/recovery; one missed rep desyncs everything, no flag), timer anchored to video frame 0 (setup time eats time cap; no clock OCR), EMOM/Tabata formats label-only, DSL lacks rounds/ladders(21-15-9)/blocks/tiebreak/versioning, squat uses knee-angle proxy instead of hip-below-knee standard, pull-up chin via nose proxy (stricter than official) + global-min bar line estimation, burpee thresholds lenient (0.35 descent, 0.02 jump, -0.03 overhead) and standards vary per WOD, pushup/KB thresholds frame-dependent (not scale-invariant), visibility gate 0.15 too low, num_poses=1 no person-consistency, OpenCV VFR drift, 15fps marginal for fast movements, 300s subprocess timeout + unlimited concurrency vs 5-20min video goal, audio stripped (-an) from review video, English-only UI for Iranian market, repo hygiene (custom.db, zips, unused deps, dead settings), synthetic-only testing
+- Generated full Persian RTL docx report: /home/z/my-project/download/CrossFit-Judge-v1-Code-Review-Report-FA.docx (23 pages, cover R1-RTL + TOC + 7 tables + 12 sections; built via scripts/report_gen/{content1,content2,generate}.js + postprocess.py per docx skill rules; postcheck 0 errors; VLM visual verification of cover + body pages passed)
+
+Stage Summary:
+- Verdict: solid v1 engineering core (FSM+hysteresis+debounce, data-driven standards, expected-sequence constraint in simplest form, per-rep evidence log, robust infra) but NOT competition-ready: 1 of 6 movements fully broken, 2 scoring formats wrong, sequencer has no recovery, no time anchor/audio/anti-fraud
+- Prioritized action plan: P0 = 6 quick fixes (KB hysteresis, For Time finish time, Tabata windows, fa/en swap, calibration on first-detected frame, keep audio); P1 = sequencer resilience + full WOD DSL + time anchor + geometric standards + processing queue + visibility gating; P2 = review console, Persian RTL, golden dataset + metrics, hijab package, score reconciliation
+- No code changes made (user rule); all findings reproducible via scripts/verify_bugs.py

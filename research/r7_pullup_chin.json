@@ -1,0 +1,56 @@
+[
+  {
+    "url": "https://github.com/simeonkolchin/pullup-detection-ai",
+    "name": "simeonkolchin/pullup-detection-ai: AI pull-up detection  - GitHub",
+    "snippet": "AI pull-up detection & technique scoring from video — RTMPose pose estimation, rep counting and GTO-standard violation detection. Missing:  landmark  proxy",
+    "host_name": "github.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.researchgate.net/publication/317190616_Landmark_Based_Head_Pose_Estimation_Benchmark_and_Method",
+    "name": "Landmark Based Head Pose Estimation Benchmark and Method",
+    "snippet": "PDF | Head pose estimation can help in understanding human behavior or to improve head pose invariance in various face analysis applications. Missing:  pull-  bar  proxy",
+    "host_name": "www.researchgate.net",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://learnopencv.com/building-a-body-posture-analysis-system-using-mediapipe",
+    "name": "Building Body Posture Detection System Using MediaPipe",
+    "snippet": "MediaPipe Pose is a high-fidelity body pose tracking solution that renders 33 3D landmarks and a background segmentation mask on the whole body ... Missing:  pull-  chin  bar  proxy  standard",
+    "host_name": "learnopencv.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/yoshan0921/fitness-app-development-with-real-time-posture-detection-using-mediapipe-38do",
+    "name": "Fitness App Development with Real-Time Posture Detection",
+    "snippet": "The pose detection model used in this project takes webcam footage as input and outputs the coordinates of 33 body landmarks, such as shoulders, ...",
+    "host_name": "dev.to",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://luxand.cloud/face-recognition-blog/human-pose-estimation-vs-facial-landmark-detection-key-structural-differences-explained",
+    "name": "Human Pose Estimation vs. Facial Landmark Detection",
+    "snippet": "Human pose estimation focuses on identifying keypoints across the entire body, such as elbows, knees, or shoulders, to interpret physical posture or Missing:  pull-  chin  bar  proxy",
+    "host_name": "luxand.cloud",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mdpi.com/2411-5142/11/2/162",
+    "name": "A Movement Description Language for Functional Training",
+    "snippet": "The pose estimation module detects 33 key body landmarks from video frames and calculates pose-derived angle proxies using vector mathematics.",
+    "host_name": "www.mdpi.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  }
+]

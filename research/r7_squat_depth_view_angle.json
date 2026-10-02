@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://github.com/Pradnya1208/Squats-angle-detection-using-OpenCV-and-mediapipe_v1",
+    "name": "Squat angle detection using OpenCv and Mediapipe - GitHub",
+    "snippet": "The purpose of this project is to detect the squat angles which will be helpful for the fitness instructors to provide corrective advice where appropriate.",
+    "host_name": "github.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.frontiersin.org/journals/sports-and-active-living/articles/10.3389/fspor.2026.1831625/full",
+    "name": "Geometry-informed correction of projection bias in browser",
+    "snippet": "For example, during deep squat descent, the thigh segment rotates considerably out of the sagittal plane (hip abduction/rotation), forming an oblique angle θ ... Missing:  frontal  | Show results with:",
+    "host_name": "www.frontiersin.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@ann.abramova.20/computer-vision-pose-detection-for-evaluating-workout-technique-e5a3238704ea",
+    "name": "Computer Vision Pose Detection for Evaluating Workout",
+    "snippet": "For example, the knee angle can be computed using hip, knee, and ankle landmarks. For exercises like squats, this approach worked well. To ...",
+    "host_name": "medium.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://cueform.ai/posts/ai-accuracy-squat-error-detection-study",
+    "name": "Study: AI Accuracy in Squat Error Detection",
+    "snippet": "Research shows smartphone video tools reach ~90% accuracy while IMU wearables hit up to ~99.7%; AI is best as a screening tool.",
+    "host_name": "cueform.ai",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pubmed.ncbi.nlm.nih.gov/36198251",
+    "name": "Validity of an artificial intelligence, human pose estimation",
+    "snippet": "We observed poor relationships for the frontal plane knee angle between 3D motion analysis with 2D pose estimation (r = 0.20) and traditional 2D motion analysis ... Missing:  depth  camera  projected  error  oblique  view",
+    "host_name": "pubmed.ncbi.nlm.nih.gov",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://hackmd.io/@yzahran/cv2",
+    "name": "Revolutionizing Squat Depth Monitoring: A Breakthrough in",
+    "snippet": "By incorporating a pose estimation preprocessing step, our computer vision-based system detects joint angles and overlays skeletal ...",
+    "host_name": "hackmd.io",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://reposit.haw-hamburg.de/bitstream/20.500.12738/18683/1/BA_Squat%20Assessment%20using%20Pose%20Estimation_geschw%C3%A4rzt.pdf",
+    "name": "[PDF] Squat Assessment using Pose Estimation",
+    "snippet": "With the Pose estimation model it can also show the skeleton perspective, the knee-angle and distances from important joints.",
+    "host_name": "reposit.haw-hamburg.de",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://learnopencv.com/ai-fitness-trainer-using-mediapipe",
+    "name": "Build an AI Fitness Trainer Using MediaPipe For Squat Analysis",
+    "snippet": "This article aims to build an AI fitness trainer that can help you perform squats seamlessly, irrespective of whether you are a beginner or ...",
+    "host_name": "learnopencv.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

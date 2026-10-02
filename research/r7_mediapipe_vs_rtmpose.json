@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://medium.com/@fabrice_77308/the-best-human-pose-estimation-model-in-2026-db7f7cfe6dab",
+    "name": "The Best Human Pose Estimation Model in 2026? - Medium",
+    "snippet": "This is a practical, honest comparison of the eight human pose estimation models developers. BlazePose runs at 11–12 (5 for Heavy). MediaPipe's ...",
+    "host_name": "medium.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.forasoft.com/learn/ai-for-video-engineering/articles-ai/openpose-mediapipe-rtmpose-pose-tracking",
+    "name": "OpenPose, MediaPipe Pose, RTMPose, ViTPose - Fora Soft",
+    "snippet": "The whole-body variant, RTMW, reaches 67.0 percent AP on the COCO-WholeBody benchmark — which includes hand and face keypoints, 133 points ... Missing:  RTMO  | Show results with:",
+    "host_name": "www.forasoft.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.posetracker.com/news/best-pose-estimation-model-in-2026-the-real-time-mobile-guide",
+    "name": "Best Pose Estimation Model in 2026: The Real-Time Mobile",
+    "snippet": "We compare the eight models developers actually reach for: MoveNet, MediaPipe Pose Landmarker (BlazePose), ML Kit Pose Detection, YOLO26-pose, ... Missing:  AP  | Show results with:",
+    "host_name": "www.posetracker.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2407.08634v1",
+    "name": "Real-Time Multi-Person 2D and 3D Whole-body Pose Estimation",
+    "snippet": "RTMW demonstrates strong performance on multiple whole-body pose estimation benchmarks while maintaining high inference efficiency and ... Missing:  landmarker  comparison",
+    "host_name": "arxiv.org",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://developers.google.com/edge/mediapipe/solutions/vision/pose_landmarker",
+    "name": "Pose landmark detection guide | Google AI Edge",
+    "snippet": "The MediaPipe Pose Landmarker task lets you detect landmarks of human bodies in an image or video. You can use this task to identify key body locations, ... Missing:  accuracy  RTMO  comparison",
+    "host_name": "developers.google.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/open-mmlab/mmpose/discussions/3135",
+    "name": "RTMPose vs RTMO vs DWPose vs RTMW #3135 - GitHub",
+    "snippet": "RTMO: One stage (no detection needed). Faster with more than 4 people, slightly worse accuracy, only 17 points. Whole-body, faster than RTMW but less accurate",
+    "host_name": "github.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://blog.roboflow.com/best-pose-estimation-models",
+    "name": "Best Pose Estimation Models & How to Deploy Them",
+    "snippet": "MediaPipe Pose identifies 33 landmark locations across the entire body, including: Full-body joints (i.e., shoulders, hips, elbows, knees, ... Missing:  RTMO  | Show results with:",
+    "host_name": "blog.roboflow.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mdpi.com/2813-4648/4/3/28",
+    "name": "Human Pose Estimation in 2D and 3D: A Survey of Analytical",
+    "snippet": "This survey presents a comprehensive review of Human Pose Estimation spanning 2D and 3D settings, unifying prior work through a taxonomy of body ...",
+    "host_name": "www.mdpi.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]
