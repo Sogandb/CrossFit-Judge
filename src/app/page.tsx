@@ -120,7 +120,12 @@ export default function Home() {
         claimedCapped: p.claimedCapped,
         manualStartSec: p.manualStartSec,
         signal: controller.signal,
-        onProgress,
+        // Drive the PAGE's uploadPct (StatusPanel stays mounted during upload;
+        // the form's own setter alone would never move the visible bar).
+        onProgress: (pct) => {
+          setUploadPct(pct);
+          onProgress?.(pct);
+        },
       });
       setJob({
         id: r.job_id, created_at: Date.now() / 1000, status: "queued",

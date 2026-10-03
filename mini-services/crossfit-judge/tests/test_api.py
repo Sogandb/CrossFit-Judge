@@ -119,3 +119,96 @@ def test_history(client):
     assert r.status_code == 200
     jobs = r.json()["jobs"]
     assert isinstance(jobs, list) and len(jobs) >= 1
+
+
+# --------------------------------------------------------------------------- #
+# Chunked / resumable upload
+# --------------------------------------------------------------------------- #
+_OCTET = {"content-type": "application/octet-stream"}
+
+
+def test_chunked_upload_flow(client, tiny_mp4):
+    from config.settings import UPLOADS_DIR
+    data = tiny_mp4.read_bytes()
+    r = client.post("/api/jobs/init", data={
+        "filename": "sample.mp4",
+        "total_bytes": str(len(data)),
+        "division": "m_18_34_rx",
+        "wod_id": "wodx_ladder_wod1",
+        "athlete_name": "chunk test",
+        "claimed_reps": "10",
+        "pose_source": "mock",
+        "mock_block_scale": "0.15",
+    })
+    assert r.status_code == 200, r.text
+    init = r.json()
+    job_id = init["job_id"]
+    assert init["expected_index"] == 0 and init["chunk_size"] > 0
+
+    # out-of-order chunk (index 1 before 0) → 409 + expected_index
+    r = client.post(f"/api/jobs/{job_id}/chunk", params={"index": 1, "total": 2},
+                    content=data[:10], headers=_OCTET)
+    assert r.status_code == 409
+    assert r.json()["expected_index"] == 0
+
+    half = len(data) // 2
+    r = client.post(f"/api/jobs/{job_id}/chunk", params={"index": 0, "total": 2},
+                    content=data[:half], headers=_OCTET)
+    assert r.status_code == 200, r.text
+    assert r.json()["received"] == half
+
+    # retried duplicate of chunk 0 → idempotent ack, no extra bytes
+    r = client.post(f"/api/jobs/{job_id}/chunk", params={"index": 0, "total": 2},
+                    content=data[:half], headers=_OCTET)
+    assert r.status_code == 200 and r.json().get("duplicate") is True
+    assert r.json()["received"] == half
+
+    # premature complete → 400 (missing bytes)
+    r = client.post(f"/api/jobs/{job_id}/complete")
+    assert r.status_code == 400
+
+    # resume probe reflects the session state
+    r = client.get(f"/api/jobs/{job_id}/session")
+    assert r.status_code == 200
+    st = r.json()
+    assert st["complete"] is False and st["registered"] is False
+    assert st["expected_index"] == 1 and st["received"] == half
+
+    r = client.post(f"/api/jobs/{job_id}/chunk", params={"index": 1, "total": 2},
+                    content=data[half:], headers=_OCTET)
+    assert r.status_code == 200, r.text
+    assert r.json()["received"] == len(data)
+
+    r = client.post(f"/api/jobs/{job_id}/complete")
+    assert r.status_code == 200, r.text
+    assert r.json()["job_id"] == job_id
+
+    # session file removed after completion
+    assert not (UPLOADS_DIR / job_id / "session.json").exists()
+
+    body = _wait_done(client, job_id)
+    assert body["result"] is not None
+    assert body["result"]["reconciliation"]["claimed_reps"] == 10
+    # the reassembled file is byte-identical to the source
+    assert (UPLOADS_DIR / job_id / "original.mp4").read_bytes() == data
+
+
+def test_chunked_init_validation(client):
+    r = client.post("/api/jobs/init",
+                    data={"filename": "clip.avi", "division": "m_18_34_rx"})
+    assert r.status_code == 415
+    r = client.post("/api/jobs/init",
+                    data={"filename": "clip.mp4", "division": "nonexistent"})
+    assert r.status_code == 422
+    r = client.post("/api/jobs/init", data={
+        "filename": "clip.mp4", "division": "m_18_34_rx",
+        "total_bytes": str(999 * 1024 ** 3)})
+    assert r.status_code == 413
+    # unknown session → 404 everywhere
+    r = client.get("/api/jobs/does-not-exist/session")
+    assert r.status_code == 404
+    r = client.post("/api/jobs/does-not-exist/chunk", params={"index": 0, "total": 1},
+                    content=b"x", headers=_OCTET)
+    assert r.status_code == 404
+    r = client.post("/api/jobs/does-not-exist/complete")
+    assert r.status_code == 404

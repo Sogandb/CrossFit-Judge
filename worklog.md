@@ -173,3 +173,25 @@ Stage Summary:
 - V2 now wears the v1 template: dark zinc + red v1 look by default, English-first UI, Persian only for no-rep reasons (always), user-selectable light/dark + EN/FA (movement/WOD terms never translated)
 - Engine schema is bilingual end-to-end (stages, verdicts, statuses, notes, warnings, errors all fa+en); all v1 compat Persian fields preserved; 31/31 tests green
 - Sandbox full pipeline restored (mediapipe + model + GL libs) and E2E-verified through the real UI upload flow
+
+---
+Task ID: 12
+Agent: main (Super Z)
+Task: User reported upload stuck at 0% for 8 minutes when testing the deployed V2 app through the preview URL — diagnose and fix.
+
+Work Log:
+- Diagnosed: both servers healthy (Next:3000, Python:8001); dev.log had ZERO POST /api/jobs entries — the user's upload never completed; local tests proved the app chain fine (500MB single POST via gateway :81 in 4.8s), isolating the stall to the external tunnel layer on giant request bodies
+- Reproduced the EXACT user symptom in local browser E2E: progress bar showed 0% for the entire 500MB chunked upload even while chunks were flowing (network log: 250/250 chunks OK) — ROOT CAUSE #1 (UI): page.tsx passed the UploadForm's setState as onProgress to uploadJob, but the form unmounts during "uploading" phase, so StatusPanel's page-level uploadPct never updated → bar frozen at 0% regardless of real progress
+- ROOT CAUSE #2 (transport): single giant multipart POST can stall in body-capped/buffering proxies (the 8-min freeze through the preview tunnel) — fixed with chunked/resumable upload (the tus-style architecture recommended in Task 8 consultation)
+- Backend (main.py): new endpoints POST /api/jobs/init (form+filename+total_bytes, validates division/ext/size, creates session.json), POST /api/jobs/{id}/chunk?index=N (octet-stream, in-order with idempotent duplicate ack + body DRAIN before early responses to avoid connection resets, file-level idempotency via truncate-to-acked-size, MAX_UPLOAD_BYTES enforcement with rollback), GET /api/jobs/{id}/session (resume probe), POST /api/jobs/{id}/complete (size verification + register via create_with_id); refactored create_job to share _validate_division/_claimed_from/_build_meta/_new_job_id; stale-session sweeper (>24h, throttled 10min)
+- Frontend (judge-client.ts): files >16MB auto-switch to chunked path (2-8MB chunks, ≥400 progress steps, XHR per chunk for intra-chunk progress), per-chunk retry ×4 with exponential backoff, 10-min per-chunk timeout, 409 resync to server-truth expected_index (bounded), permanent-error class (404/413/415/422 no retry), resume via localStorage keyed by name|size|lastModified probing /session, cleanup on complete; single-POST path kept for ≤16MB (refactored onto shared xhrJson helper)
+- UI: page.tsx onProgress now drives page-level setUploadPct (fixes the 0% bar — the actual user-visible bug) + still forwards to form setter; UploadForm shows "X% · Y MB" + resumable-chunks hint (i18n key proc.uploadChunkHint EN/FA)
+- Tests: +2 pytest (test_chunked_upload_flow: full init→409→chunk→duplicate→premature-complete-400→resume-probe→complete→done→sha256-identical reassembly; test_chunked_init_validation: 415/422/413/404s) → 33/33 PASS; ESLint clean
+- E2E bash (scripts/upload-test/e2e_chunked.sh): 500MB → 63×8MB chunks via Next proxy incl. duplicate chunk ack, out-of-order 409, simulated page-reload resume from server truth, complete, sha256 byte-identical, job done
+- Browser E2E (agent-browser): 16.5MB valid video via UI → chunked path (init + 9 XHR chunks + complete) → job failed honestly at validation (320x240 < 480p gate — correct behavior); 500MB via UI ×3 → all 250/250 chunks 200, localStorage resume key set during upload and removed after complete, no console/page errors; in-page 300ms sampler PROVED the fix: progress series 2%→4%→…→73%→… climbing smoothly (was frozen 0% before the page.tsx fix)
+- Cleanup: purged 13 junk test jobs (2.5GB) + test artifacts; rebuilt deliverable download/crossfit-judge-v2.zip (146 files, 324KB) with updated README (chunked-upload API table + section)
+
+Stage Summary:
+- Upload pipeline now: small files single-POST; large files chunked+resumable+retrying — immune to tunnel body caps, and the progress bar reflects real transfer state
+- Both root causes fixed and independently verified: (1) progress state wiring (reproduced + fixed + re-verified live in browser), (2) giant-body transport stalls (chunking, verified via 500MB E2E with hash identity)
+- 33/33 tests green; lint clean; servers running healthy; zip deliverable rebuilt

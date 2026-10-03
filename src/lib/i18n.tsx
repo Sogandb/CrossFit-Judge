@@ -109,6 +109,10 @@ export const DICT: Record<string, Entry> = {
   "proc.defaultMsg": { en: "Running pose detection & rep counting", fa: "اجرای تشخیص حرکت و شمارش رپ" },
   "proc.cancel": { en: "Cancel", fa: "لغو" },
   "proc.uploadingLabel": { en: "Uploading…", fa: "در حال ارسال…" },
+  "proc.uploadChunkHint": {
+    en: "Large videos are sent in small resumable chunks — if the connection drops, only the current chunk is retried.",
+    fa: "ویدیوهای حجیم به‌صورت تکه‌های کوچکِ قابل ازسرگیری ارسال می‌شوند — با قطع شدن اتصال، فقط همان تکه دوباره ارسال می‌شود.",
+  },
   "proc.hint": {
     en: "A 12–15 minute video takes a few minutes on a typical server. This page updates automatically.",
     fa: "تحلیل یک ویدیوی ۱۲ تا ۱۵ دقیقه‌ای روی سرور معمولی چند دقیقه طول می‌کشد؛ این صفحه خودکار به‌روز می‌شود.",
