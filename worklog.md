@@ -141,3 +141,35 @@ Stage Summary:
 - V2 complete and runnable: Next.js frontend (port 3000) + Python engine (port 8001, auto-spawned), deployable on Wodx server via setup.sh + bun; 31 automated tests green
 - Key architectural wins over v1: expected-sequence FSM activation (no cross-movement interference), sequencer recovery (no deadlock on missed reps), scale-invariant thresholds, single-source fa/en reasons, CFR timeline, preroll calibration, bounded in-process queue, audio preserved, Persian RTL UI
 - Honest limitations documented in README: accuracy on real videos not yet measured (golden dataset + calibration is next), division weights are placeholders pending Wodx confirmation, beep bands need calibration on real Wodx timer audio
+
+---
+Task ID: 11
+Agent: main (Super Z)
+Task: Restore the v1 (github.com/Sogandb/CrossFit-Judge) frontend look & feel on the V2 app per user request: everything English by default, no-rep reasons stay Persian, add user-selectable light/dark mode, add EN/FA language switch (movement names / WOD content / terminology stay English, untranslated). Nothing else changed.
+
+Work Log:
+- Backend (additive bilingual fields, all Persian fields + 31 tests kept green):
+  - data/divisions.json: label_en added to all 32 divisions (scripts/add_label_en.py)
+  - data/wods/wodx_ladder_wod1.json: format_en, description_en, score_en added
+  - main.py: /api/divisions now groups by "Men"/"Women" with label_fa+label_en per item; /api/wods exposes name_en/format/format_en/description_en/score_en; HTTPException messages English
+  - jobs/store.py: stage column stores KEYS; STAGES registry fa/en; stage_key/stage_fa/stage_en in get()/list(); error_en column (ALTER TABLE migration); fail(job, fa, en)
+  - core/analyzer.py: progress stage keys (validate/start_detect/calibration/waiting_athlete/analyzing/scoring/review_video); warnings -> structured [{code,fa,en}]; result.wod EN fields; AnalysisOutcome.error_en; MOVEMENT_LABELS_EN passed to sequencer
+  - core/sequence.py: notes_en on events; block status_en + movement_en; flags reason_en
+  - judging/scorer.py: verdict_en for all 6 verdicts; score_display English score ("08:45"/"N reps") + score_en/status_en (Persian fields kept)
+  - ingest/validate.py: error_en parallel to every error_fa
+- Frontend (v1 template restored, shadcn base kept):
+  - globals.css: v1 exact zinc palette as design tokens (app/panel/panel-2/chip/edge/edge-2/ink 1-4/brand/brand-fg) — dark = V1 zinc-950 exact; new light palette; shadcn tokens mapped to same scheme; Vazirmatn only for html[lang=fa]; scroll-slim scrollbar
+  - layout.tsx: EN metadata ("CrossFit Judge — AI Competition Judge"), next-themes (class, default dark, no system), LangProvider, pre-paint lang/dir script
+  - src/lib/i18n.tsx: LangProvider + ~120-key EN/FA dictionary + MOVEMENT_LABELS (always EN) + localized digits/clock/dateTime; localStorage cfj-lang
+  - New v1 components: Header (v1 style + EN/فا toggle + Sun/Moon theme toggle), Footer, ScoreCard, StatsGrid, BlocksTable, RepTable (#/Verdict/Movement/Time/Round/Reason — Reason ALWAYS Persian, rows click-to-seek), AnnotatedVideoPlayer (ref-prop for seeking)
+  - Rewritten in v1 style: WodCard (For Time header, ladder chips, standards accordions — standards content always English), UploadForm (v1 dropzone + division select + claimed score radios + manual start; abortable upload), StatusPanel (v1 ProcessingPanel: icon circle, red→orange gradient bar, pipeline stepper), ResultsView (meta strip, ScoreCard, reconciliation banner, StatsGrid, Per-Movement, video+RepTable grid, BlocksTable, flagged-review box, JSON download), HistoryList (sidebar), page.tsx (v1 skeleton: sidebar steps + workout summary + recent analyses + judging note; phases idle/uploading/processing/completed/failed; 5-error poll guard; scroll-mt-20 fix for sticky header overlap)
+  - judge-client.ts: EN error strings, fetchJobs cleanup, AbortSignal support (xhr.abort on cancel)
+  - Removed orphaned src/lib/fa.ts
+- Environment repairs (sandbox): python-server.ts venv discovery extended (.zscripts/pyvenv + /home/z/.venv fallbacks); mediapipe 1.0.1 installed into /home/z/.venv; pose_landmarker_full.task model downloaded; Debian GLVND libs (libEGL.so.1/libGLESv2.so.2/libGL.so.1/libGLX/libGLdispatch) extracted to .zscripts/pylibs restoring real-video MediaPipe inference
+- Verification: Python 31/31 tests PASS (twice); ESLint clean; browser E2E via agent-browser: EN dark default (bodyBg #09090b = exact v1), full results render EN with Persian no-rep reasons in Reason column, فا switch → rtl + Vazirmatn + Persian UI with English movement names/WOD terms, light mode toggle (zinc-50) persists via next-themes, real-video job (Sara Test) shows review video (readyState 4) + empty state + flagged box, complete UI upload flow (drop file via DataTransfer + division + claim → upload → analyzing → Judging Results "0 reps" honest), mobile 390px (sidebar hidden, mobile history visible), sticky-header overlap bug found & fixed (scroll-mt-20), theme+lang persist across reloads, no console/page errors; VLM comparisons vs v1 screenshots confirm template preserved (idle + results)
+- Deliverable rebuilt: download/crossfit-judge-v2.zip (154 files, ~1MB) incl. updated README (UI row + architecture lines updated to bilingual v1-template UI)
+
+Stage Summary:
+- V2 now wears the v1 template: dark zinc + red v1 look by default, English-first UI, Persian only for no-rep reasons (always), user-selectable light/dark + EN/FA (movement/WOD terms never translated)
+- Engine schema is bilingual end-to-end (stages, verdicts, statuses, notes, warnings, errors all fa+en); all v1 compat Persian fields preserved; 31/31 tests green
+- Sandbox full pipeline restored (mediapipe + model + GL libs) and E2E-verified through the real UI upload flow

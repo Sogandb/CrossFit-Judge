@@ -33,6 +33,7 @@ class ScoredEvent:
     scored: bool                 # counted toward the score
     post_cap: bool = False
     notes: list[str] = field(default_factory=list)
+    notes_en: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -51,6 +52,7 @@ class ScoredEvent:
             "details": self.attempt.details,
             "review_flags": self.attempt.review_flags,
             "notes": self.notes,
+            "notes_en": self.notes_en,
         }
 
 
@@ -77,25 +79,30 @@ class BlockState:
     complete: bool = False
     excess_flagged: bool = False
 
-    def to_dict(self, idx: int, label_fa: str) -> dict:
+    def to_dict(self, idx: int, label_fa: str, label_en: str = "") -> dict:
         return {
             "idx": idx,
             "movement": self.movement,
             "movement_fa": label_fa,
+            "movement_en": label_en or self.movement,
             "reps": self.reps,
             "credited": self.credited,
             "complete": self.complete,
             "status_fa": ("کامل" if self.complete else
                           ("ناقص" if self.credited > 0 else "شروع نشده")),
+            "status_en": ("Complete" if self.complete else
+                          ("Partial" if self.credited > 0 else "Not started")),
         }
 
 
 class WodSequencer:
-    def __init__(self, wod: dict, t_start: float, labels_fa: dict[str, str]):
+    def __init__(self, wod: dict, t_start: float, labels_fa: dict[str, str],
+                 labels_en: Optional[dict[str, str]] = None):
         self.wod = wod
         self.t_start = t_start
         self.cap = float(wod.get("time_cap_sec") or 0)
         self.labels_fa = labels_fa
+        self.labels_en = labels_en or {}
         self.blocks = [BlockState(movement=b["movement"], reps=int(b["reps"]))
                        for b in wod["blocks"]]
         self.block_idx = 0
@@ -114,7 +121,8 @@ class WodSequencer:
 
     def _flag(self, code: str, t: float, extra: Optional[dict] = None) -> None:
         self.flags.append({"t": round(t, 2), "code": code,
-                           "reason_fa": _reason_fa(code), **(extra or {})})
+                           "reason_fa": _reason_fa(code),
+                           "reason_en": _reason_en(code), **(extra or {})})
 
     # ------------------------------------------------------------------ #
     def feed(self, attempts: list[Attempt], t_now: float) -> None:
@@ -184,14 +192,16 @@ class WodSequencer:
         if post_cap:
             self.events.append(ScoredEvent(
                 attempt=a, block_idx=None, rep_no=None, scored=False,
-                post_cap=True, notes=["پس از پایان زمان مجاز — شمرده نشد"]))
+                post_cap=True,
+                notes=["پس از پایان زمان مجاز — شمرده نشد"],
+                notes_en=["After the time cap — not scored"]))
             return
 
         # ---- wrong-movement attempt inside the current block ---- #
         if a.movement != block.movement:
             self.events.append(ScoredEvent(
                 attempt=a, block_idx=None, rep_no=None, scored=False,
-                notes=["خارج از ترتیب واد"]))
+                notes=["خارج از ترتیب واد"], notes_en=["Out of WOD order"]))
             return
 
         # ---- no-rep of the current movement: logged with reason ---- #
@@ -221,7 +231,8 @@ class WodSequencer:
                             "movement": block.movement})
             self.events.append(ScoredEvent(
                 attempt=a, block_idx=self.block_idx, rep_no=None, scored=False,
-                notes=["رپ اضافه — بیش از تعداد تعیین‌شده این رند"]))
+                notes=["رپ اضافه — بیش از تعداد تعیین‌شده این رند"],
+                notes_en=["Excess rep — beyond this round's prescription"]))
 
     def _check_finished(self) -> None:
         if all(b.complete for b in self.blocks):
@@ -270,6 +281,7 @@ class WodSequencer:
             "total_credited": sum(b.credited for b in self.blocks),
             "total_prescribed": sum(b.reps for b in self.blocks),
             "per_movement": per_movement,
-            "blocks": [b.to_dict(i, self.labels_fa.get(b.movement, b.movement))
+            "blocks": [b.to_dict(i, self.labels_fa.get(b.movement, b.movement),
+                                 self.labels_en.get(b.movement, b.movement))
                        for i, b in enumerate(self.blocks)],
         }

@@ -28,7 +28,7 @@ export function fetchWods(): Promise<{ wods: WodSummary[] }> {
 }
 
 export function fetchJobs(): Promise<{ jobs: JobInfo[] }> {
-  return json<{ jobs: JobInfo[] }>("/api/jobs".replace("/api/jobs", "/api/judge/jobs"));
+  return json<{ jobs: JobInfo[] }>("/api/judge/jobs");
 }
 
 export function fetchJob(id: string): Promise<{ job: JobInfo; result: AnalysisResult | null }> {
@@ -44,6 +44,7 @@ export interface UploadPayload {
   claimedCapped?: boolean;
   manualStartSec?: number | null;
   mockMode?: boolean;
+  signal?: AbortSignal;
   onProgress?: (pct: number) => void;
 }
 
@@ -70,6 +71,13 @@ export function uploadJob(payload: UploadPayload): Promise<{ job_id: string }> {
 
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/judge/jobs");
+    if (payload.signal) {
+      if (payload.signal.aborted) {
+        reject(new DOMException("Aborted", "AbortError"));
+        return;
+      }
+      payload.signal.addEventListener("abort", () => xhr.abort(), { once: true });
+    }
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable && payload.onProgress) {
         payload.onProgress(Math.round((e.loaded / e.total) * 100));
@@ -79,11 +87,11 @@ export function uploadJob(payload: UploadPayload): Promise<{ job_id: string }> {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
           resolve(JSON.parse(xhr.responseText));
-        } catch (err) {
-          reject(new Error("پاسخ نامعتبر از سرور"));
+        } catch {
+          reject(new Error("Invalid response from the server"));
         }
       } else {
-        let detail = `خطای سرور (${xhr.status})`;
+        let detail = `Server error (${xhr.status})`;
         try {
           const b = JSON.parse(xhr.responseText);
           detail = b.detail || detail;
@@ -91,7 +99,8 @@ export function uploadJob(payload: UploadPayload): Promise<{ job_id: string }> {
         reject(new Error(detail));
       }
     };
-    xhr.onerror = () => reject(new Error("خطای شبکه در آپلود ویدیو"));
+    xhr.onerror = () => reject(new Error("Network error while uploading the video"));
+    xhr.onabort = () => reject(new DOMException("Aborted", "AbortError"));
     xhr.send(form);
   });
 }

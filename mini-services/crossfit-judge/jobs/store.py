@@ -32,18 +32,38 @@ CREATE TABLE IF NOT EXISTS jobs (
     stage TEXT NOT NULL DEFAULT '',
     progress REAL NOT NULL DEFAULT 0,
     error_fa TEXT,
+    error_en TEXT,
     meta_json TEXT NOT NULL,
     result_json TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_jobs_created ON jobs(created_at DESC);
 """
 
-STAGES_FA = {
-    "queued": "در صف پردازش",
-    "running": "در حال پردازش",
-    "done": "تکمیل شد",
-    "failed": "خطا",
+# Stage keys → bilingual labels. The `stage` column stores the KEY so the
+# web UI can render either language (English by default).
+STAGES = {
+    "queued":          {"fa": "در صف پردازش",                "en": "Queued"},
+    "validate":        {"fa": "اعتبارسنجی ویدیو",            "en": "Validating video"},
+    "start_detect":    {"fa": "تشخیص لحظه شروع (بوق ۳+۱)",    "en": "Detecting workout start (3+1 beeps)"},
+    "calibration":     {"fa": "کالیبراسیون صحنه",            "en": "Calibrating scene"},
+    "waiting_athlete": {"fa": "در انتظار شناسایی ورزشکار…",  "en": "Waiting for athlete detection…"},
+    "analyzing":       {"fa": "تحلیل فریم‌ها",                "en": "Analyzing frames"},
+    "scoring":         {"fa": "امتیازدهی و تطبیق",            "en": "Scoring & reconciliation"},
+    "review_video":    {"fa": "ساخت ویدیوی بازبینی",          "en": "Building review video"},
+    "running":         {"fa": "در حال پردازش",                "en": "Processing"},
+    "done":            {"fa": "تکمیل شد",                     "en": "Completed"},
+    "failed":          {"fa": "خطا",                          "en": "Failed"},
 }
+
+
+def _stage_view(raw: str) -> dict:
+    """stage column value → {stage_key, stage_fa, stage_en}. Legacy rows
+    (created before stage keys) hold Persian free text — passthrough as fa."""
+    if raw in STAGES:
+        return {"stage_key": raw,
+                "stage_fa": STAGES[raw]["fa"],
+                "stage_en": STAGES[raw]["en"]}
+    return {"stage_key": "legacy", "stage_fa": raw or "", "stage_en": ""}
 
 
 class JobStore:
@@ -54,6 +74,11 @@ class JobStore:
         self._db = sqlite3.connect(str(DB_PATH), check_same_thread=False)
         self._db.execute("PRAGMA journal_mode=WAL")
         self._db.executescript(SCHEMA)
+        # migration for DBs created before the bilingual error columns
+        try:
+            self._db.execute("ALTER TABLE jobs ADD COLUMN error_en TEXT")
+        except sqlite3.OperationalError:
+            pass  # column already exists
         self._db.commit()
         # worker pool
         self._q: "queue.Queue[Optional[str]]" = queue.Queue()
@@ -77,23 +102,27 @@ class JobStore:
             self._db.execute(
                 "INSERT INTO jobs (id, created_at, status, stage, progress, meta_json) "
                 "VALUES (?, ?, 'queued', ?, 0, ?)",
-                (job_id, time.time(), STAGES_FA["queued"], json.dumps(meta, ensure_ascii=False)),
+                (job_id, time.time(), "queued", json.dumps(meta, ensure_ascii=False)),
             )
             self._db.commit()
         self._q.put(job_id)
         return job_id
 
+    _JOB_COLS = "id, created_at, status, stage, progress, error_fa, error_en, meta_json"
+
     def get(self, job_id: str) -> Optional[dict]:
         with self._lock:
             row = self._db.execute(
-                "SELECT id, created_at, status, stage, progress, error_fa, meta_json "
-                "FROM jobs WHERE id = ?", (job_id,)).fetchone()
+                f"SELECT {self._JOB_COLS} FROM jobs WHERE id = ?",
+                (job_id,)).fetchone()
         if not row:
             return None
+        stage = _stage_view(row[3])
         return {
             "id": row[0], "created_at": row[1], "status": row[2],
-            "stage_fa": row[3] or "", "progress": row[4], "error_fa": row[5],
-            "meta": json.loads(row[6] or "{}"),
+            **stage, "progress": row[4],
+            "error_fa": row[5], "error_en": row[6],
+            "meta": json.loads(row[7] or "{}"),
         }
 
     def get_result(self, job_id: str) -> Optional[dict]:
@@ -107,14 +136,16 @@ class JobStore:
     def list(self, limit: int = 50) -> list[dict]:
         with self._lock:
             rows = self._db.execute(
-                "SELECT id, created_at, status, stage, progress, error_fa, meta_json "
-                "FROM jobs ORDER BY created_at DESC LIMIT ?", (limit,)).fetchall()
+                f"SELECT {self._JOB_COLS} FROM jobs "
+                "ORDER BY created_at DESC LIMIT ?", (limit,)).fetchall()
         out = []
         for row in rows:
-            meta = json.loads(row[6] or "{}")
+            meta = json.loads(row[7] or "{}")
+            stage = _stage_view(row[3])
             out.append({
                 "id": row[0], "created_at": row[1], "status": row[2],
-                "stage_fa": row[3] or "", "progress": row[4], "error_fa": row[5],
+                **stage, "progress": row[4],
+                "error_fa": row[5], "error_en": row[6],
                 "athlete_name": meta.get("athlete_name") or "",
                 "division": meta.get("division") or "",
                 "wod_id": meta.get("wod_id") or "",
@@ -131,17 +162,17 @@ class JobStore:
             self._db.execute(f"UPDATE jobs SET {', '.join(cols)} WHERE id = ?", vals)
             self._db.commit()
 
-    def set_stage(self, job_id: str, stage_fa: str, progress: float) -> None:
-        self._update(job_id, status="running", stage=stage_fa,
+    def set_stage(self, job_id: str, stage_key: str, progress: float) -> None:
+        self._update(job_id, status="running", stage=stage_key,
                      progress=max(0.0, min(100.0, progress)))
 
     def finish(self, job_id: str, result: dict) -> None:
-        self._update(job_id, status="done", stage=STAGES_FA["done"], progress=100,
+        self._update(job_id, status="done", stage="done", progress=100,
                      result_json=json.dumps(result, ensure_ascii=False))
 
-    def fail(self, job_id: str, error_fa: str) -> None:
-        self._update(job_id, status="failed", stage=STAGES_FA["failed"],
-                     error_fa=error_fa)
+    def fail(self, job_id: str, error_fa: str, error_en: Optional[str] = None) -> None:
+        self._update(job_id, status="failed", stage="failed",
+                     error_fa=error_fa, error_en=error_en)
 
     # ------------------------------------------------------------------ #
     # Worker
@@ -156,7 +187,7 @@ class JobStore:
             except Exception as e:  # noqa: BLE001
                 import traceback
                 traceback.print_exc()
-                self.fail(job_id, f"خطای غیرمنتظره: {e}")
+                self.fail(job_id, f"خطای غیرمنتظره: {e}", f"Unexpected error: {e}")
 
     def _run_job(self, job_id: str) -> None:
         job = self.get(job_id)
@@ -165,7 +196,7 @@ class JobStore:
         meta = job["meta"]
         wod = self._load_wod(meta.get("wod_id"))
         if wod is None:
-            self.fail(job_id, "واد مورد نظر یافت نشد")
+            self.fail(job_id, "واد مورد نظر یافت نشد", "Workout not found")
             return
         updir = UPLOADS_DIR / job_id
         video_path = str(updir / "original.mp4")
@@ -181,7 +212,8 @@ class JobStore:
         if outcome.ok:
             self.finish(job_id, outcome.result)
         else:
-            self.fail(job_id, outcome.error_fa or "خطای نامشخص")
+            self.fail(job_id, outcome.error_fa or "خطای نامشخص",
+                      outcome.error_en or "Unknown error")
 
     @staticmethod
     def _load_wod(wod_id: Optional[str]) -> Optional[dict]:

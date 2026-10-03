@@ -1,68 +1,67 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { History, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import type { JobInfo } from "./types";
-import { faDateTime } from "@/lib/fa";
+import { useLang } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
-interface Props {
+/** Sidebar "Recent Analyses" — compact v1-styled list. */
+export function HistoryList({ jobs, onSelect, activeId }: {
   jobs: JobInfo[];
   onSelect: (id: string) => void;
   activeId?: string;
-}
+}) {
+  const { t, dateTime, lang } = useLang();
 
-export function HistoryList({ jobs, onSelect, activeId }: Props) {
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg font-bold">
-          <History className="h-5 w-5" />
-          تحلیل‌های اخیر
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {jobs.length === 0 ? (
-          <p className="py-4 text-center text-sm text-muted-foreground">
-            هنوز تحلیلی ثبت نشده است.
-          </p>
-        ) : (
-          <ul className="divide-y">
-            {jobs.map((j) => (
-              <li key={j.id}>
-                <button
-                  onClick={() => onSelect(j.id)}
-                  className={`flex w-full items-center justify-between gap-3 py-2.5 text-right
-                              hover:bg-zinc-50 ${activeId === j.id ? "bg-red-50/60" : ""}`}
-                >
-                  <div className="min-w-0">
-                    <div className="truncate font-medium">
-                      {j.athlete_name || j.id}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {faDateTime(j.created_at)}
-                    </div>
+    <div className="space-y-2">
+      <p className="text-[11px] font-bold uppercase tracking-wider text-ink-3">
+        {t("side.recent")}
+      </p>
+      {jobs.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-edge bg-panel-2/20 p-3 text-center">
+          <p className="text-xs text-ink-4">{t("side.recentEmpty")}</p>
+        </div>
+      ) : (
+        <ul className="space-y-1.5 max-h-72 overflow-y-auto scroll-slim pe-0.5">
+          {jobs.map((j) => (
+            <li key={j.id}>
+              <button
+                onClick={() => onSelect(j.id)}
+                className={cn(
+                  "w-full flex items-center justify-between gap-2.5 rounded-lg border px-2.5 py-2 text-start transition-colors",
+                  activeId === j.id
+                    ? "border-brand bg-brand/10"
+                    : "border-edge bg-panel hover:border-edge-2",
+                )}
+              >
+                <div className="min-w-0">
+                  <div className="truncate text-xs font-medium text-ink">
+                    {j.athlete_name || j.id}
                   </div>
-                  {j.status === "done" ? (
-                    <Badge className="gap-1 bg-green-600 hover:bg-green-600">
-                      <CheckCircle2 className="h-3 w-3" /> تکمیل
-                    </Badge>
-                  ) : j.status === "failed" ? (
-                    <Badge variant="destructive" className="gap-1">
-                      <XCircle className="h-3 w-3" /> خطا
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary" className="gap-1">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      {j.stage_fa}
-                    </Badge>
-                  )}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
+                  <div className="text-[10px] text-ink-4">{dateTime(j.created_at)}</div>
+                </div>
+                {j.status === "done" ? (
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-500 dark:text-emerald-400 shrink-0">
+                    <CheckCircle2 className="h-3 w-3" />
+                    {lang === "fa" ? "تکمیل" : "Done"}
+                  </span>
+                ) : j.status === "failed" ? (
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-brand-fg shrink-0">
+                    <XCircle className="h-3 w-3" />
+                    {lang === "fa" ? "خطا" : "Failed"}
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-[10px] text-ink-3 shrink-0">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    {lang === "fa" ? j.stage_fa : j.stage_en}
+                  </span>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

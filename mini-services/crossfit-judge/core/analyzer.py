@@ -27,12 +27,16 @@ from ingest.validate import validate_video
 from judging.scorer import reconcile, score_display
 from movements.bar_facing_burpee import BarFacingBurpeeFSM
 from movements.thruster import ThrusterFSM
-from movements.reasons import reason_fa
 from audio.beep_detector import detect_start
 
 MOVEMENT_LABELS_FA = {
     "thruster": "تراستر",
     "bar_facing_burpee": "بورپی رو به بار",
+}
+
+MOVEMENT_LABELS_EN = {
+    "thruster": "Thruster",
+    "bar_facing_burpee": "Bar-Facing Burpee",
 }
 
 
@@ -41,6 +45,7 @@ class AnalysisOutcome:
     ok: bool
     error_fa: Optional[str] = None
     result: Optional[dict] = None
+    error_en: Optional[str] = None
 
 
 class Analyzer:
@@ -53,9 +58,10 @@ class Analyzer:
     def run(self) -> AnalysisOutcome:
         try:
             return self._run_inner()
-        except Exception as e:  # noqa: BLE001 — surface a Persian error
+        except Exception as e:  # noqa: BLE001 — surface a bilingual error
             traceback.print_exc()
-            return AnalysisOutcome(False, f"خطای داخلی پردازش: {e}", None)
+            return AnalysisOutcome(False, f"خطای داخلی پردازش: {e}", None,
+                                   f"Internal processing error: {e}")
 
     # ------------------------------------------------------------------ #
     def _run_inner(self) -> AnalysisOutcome:
@@ -65,14 +71,14 @@ class Analyzer:
         # ---------------- 1. ingest validation ---------------- #
         info = None
         if not mock:
-            self.progress("اعتبارسنجی ویدیو", 2)
+            self.progress("validate", 2)
             res = validate_video(video_path)
             if not res.ok:
-                return AnalysisOutcome(False, res.error_fa, None)
+                return AnalysisOutcome(False, res.error_fa, None, res.error_en)
             info = res.info
 
         # ---------------- 2. start detection ---------------- #
-        self.progress("تشخیص لحظه شروع (بوق ۳+۱)", 6)
+        self.progress("start_detect", 6)
         manual_start = self.meta.get("manual_start_sec")
         start_det = None
         if manual_start is not None and float(manual_start) >= 0:
@@ -89,9 +95,9 @@ class Analyzer:
             start_method = start_det.method if start_det.t_start is not None else "video_start"
             start_conf = start_det.confidence if start_det.t_start is not None else 0.0
 
-        warnings: list[str] = []
+        warnings: list[dict] = []
         if not mock and start_method == "video_start":
-            warnings.append(reason_fa("SYS_START_NOT_FOUND"))
+            warnings.append(_warning("SYS_START_NOT_FOUND"))
 
         # ---------------- 3. analysis window ---------------- #
         wod = self.job["wod"]
@@ -125,12 +131,13 @@ class Analyzer:
             total_frames = max(1, int((window_end - window_start) * TARGET_FPS))
 
         sequencer = WodSequencer(wod, t_start=t_start,
-                                 labels_fa=MOVEMENT_LABELS_FA)
+                                 labels_fa=MOVEMENT_LABELS_FA,
+                                 labels_en=MOVEMENT_LABELS_EN)
         fsms = [ThrusterFSM(), BarFacingBurpeeFSM()]
 
         # ---------------- 5. frame loop ---------------- #
         try:
-            self.progress("کالیبراسیون صحنه", 10)
+            self.progress("calibration", 10)
             self._frame_loop(frame_iter, pose_source, window_start, t_start,
                              scene, sequencer, fsms, total_frames)
         finally:
@@ -146,11 +153,11 @@ class Analyzer:
                     pass
 
         # ---------------- 6. scoring ---------------- #
-        self.progress("امتیازدهی و تطبیق", 96)
+        self.progress("scoring", 96)
         summary = sequencer.summary()
         if not mock and summary["total_credited"] == 0 and \
                 summary["total_prescribed"] > 0:
-            warnings.append(reason_fa("SYS_NO_PERSON"))
+            warnings.append(_warning("SYS_NO_PERSON"))
         rec = reconcile(summary, self.meta.get("claimed"))
         disp = score_display(summary)
 
@@ -158,10 +165,15 @@ class Analyzer:
             "wod": {
                 "id": wod.get("wod_id"),
                 "name_fa": wod.get("name_fa"),
+                "name_en": wod.get("name_en"),
+                "format": wod.get("format"),
                 "format_fa": wod.get("format_fa"),
+                "format_en": wod.get("format_en"),
                 "time_cap_sec": wod.get("time_cap_sec"),
                 "description_fa": wod.get("description_fa"),
+                "description_en": wod.get("description_en"),
                 "score_fa": wod.get("score_fa"),
+                "score_en": wod.get("score_en"),
             },
             "start_detection": {
                 "method": start_method,
@@ -191,7 +203,7 @@ class Analyzer:
         # ---------------- 7. annotated review video ---------------- #
         if not mock and ANNOTATE_REVIEW_VIDEO and self.job.get("video_path"):
             try:
-                self.progress("ساخت ویدیوی بازبینی", 98)
+                self.progress("review_video", 98)
                 from reporting.video_annotator import annotate_video
                 annotate_video(self.job["video_path"],
                                self.job["review_path"], result)
@@ -251,7 +263,7 @@ class Analyzer:
             if not calibrated:
                 # no person/no geometry at all → keep scanning
                 if processed % 300 == 0:
-                    self.progress("در انتظار شناسایی ورزشکار…",
+                    self.progress("waiting_athlete",
                                   10 + 80 * processed / total_frames)
                 continue
 
@@ -273,7 +285,7 @@ class Analyzer:
                     sequencer.feed(closed, t_abs)
 
             if processed % 150 == 0:
-                self.progress("تحلیل فریم‌ها",
+                self.progress("analyzing",
                               10 + 85 * processed / total_frames)
 
         # flush any attempt still open at stream end (with the REAL last
@@ -321,6 +333,12 @@ class Analyzer:
             bar_x = xs[len(xs) // 2]
             conf = min(1.0, 0.3 + 0.07 * len(candidates))
             scene.set_bar(bar_x, scene.ground_y_at(bar_x) or gy, conf)
+
+
+def _warning(code: str) -> dict:
+    """Structured bilingual warning entry (UI picks fa/en)."""
+    from movements.reasons import reason_fa, reason_en
+    return {"code": code, "fa": reason_fa(code), "en": reason_en(code)}
 
 
 class _MockDetector:

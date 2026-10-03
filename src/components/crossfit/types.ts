@@ -3,11 +3,13 @@
 export interface Division {
   id: string;
   label_fa: string;
+  label_en: string;
   weight_kg: number | null;
   weights_verified: boolean;
 }
 
 export interface DivisionsResponse {
+  /** group keys are English ("Men" / "Women") — division terms stay English */
   grouped: Record<string, Division[]>;
   weights_verified: boolean;
 }
@@ -15,9 +17,15 @@ export interface DivisionsResponse {
 export interface WodSummary {
   wod_id: string;
   name_fa: string;
+  name_en: string;
+  format: string;
   format_fa: string;
+  format_en: string;
   time_cap_sec: number;
   description_fa: string;
+  description_en: string;
+  score_fa: string;
+  score_en: string;
   blocks: { movement: string; reps: number }[];
 }
 
@@ -25,9 +33,12 @@ export interface JobInfo {
   id: string;
   created_at: number;
   status: "queued" | "running" | "done" | "failed";
+  stage_key: string;
   stage_fa: string;
+  stage_en: string;
   progress: number;
   error_fa: string | null;
+  error_en: string | null;
   athlete_name?: string;
   division?: string;
   wod_id?: string;
@@ -37,10 +48,12 @@ export interface BlockSummary {
   idx: number;
   movement: string;
   movement_fa: string;
+  movement_en: string;
   reps: number;
   credited: number;
   complete: boolean;
   status_fa: string;
+  status_en: string;
 }
 
 export interface AnalysisEvent {
@@ -49,6 +62,7 @@ export interface AnalysisEvent {
   outcome: "rep" | "no_rep";
   reason_code: string | null;
   reason_fa: string | null;
+  reason_en: string | null;
   category: string | null;
   block_idx: number | null;
   rep_no: number | null;
@@ -58,14 +72,28 @@ export interface AnalysisEvent {
   details: Record<string, unknown>;
   review_flags: string[];
   notes: string[];
+  notes_en: string[];
+}
+
+export interface StructuredWarning {
+  code: string;
+  fa: string;
+  en: string;
 }
 
 export interface AnalysisResult {
   wod: {
     id: string;
     name_fa: string;
+    name_en: string;
+    format: string;
+    format_fa: string;
+    format_en: string;
     time_cap_sec: number;
     description_fa: string;
+    description_en: string;
+    score_fa: string;
+    score_en: string;
   };
   start_detection: {
     method: string;
@@ -93,12 +121,19 @@ export interface AnalysisResult {
     time_delta_sec: number | null;
     verdict: string;
     verdict_fa: string;
+    verdict_en: string;
     review_recommended: boolean;
   };
-  score_display: { score: string; score_fa: string; status_fa: string };
+  score_display: {
+    score: string;
+    score_fa: string;
+    score_en: string;
+    status_fa: string;
+    status_en: string;
+  };
   events: AnalysisEvent[];
-  sequencer_flags: { t: number; code: string; reason_fa: string }[];
-  warnings: string[];
+  sequencer_flags: { t: number; code: string; reason_fa: string; reason_en: string }[];
+  warnings: StructuredWarning[];
   review_video: boolean;
   analysis_window: { start_sec: number; end_sec: number | null };
 }

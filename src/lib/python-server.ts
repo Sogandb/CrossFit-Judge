@@ -34,8 +34,12 @@ function extraLibPaths(): string[] {
 
 function venvPython(): string {
   const candidates = [
+    // Wodx deployment: setup.sh creates a service-local venv
     path.join(SERVICE_DIR, "venv", "bin", "python"),
     path.join(SERVICE_DIR, "venv", "Scripts", "python.exe"),
+    // sandbox / dev fallbacks
+    path.join(process.cwd(), ".zscripts", "pyvenv", "bin", "python"),
+    "/home/z/.venv/bin/python",
   ];
   for (const p of candidates) if (fs.existsSync(p)) return p;
   return "python3";

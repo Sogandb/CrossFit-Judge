@@ -67,9 +67,15 @@ def wods():
             d = json_load(p)
             catalog.append({
                 "wod_id": d["wod_id"], "name_fa": d.get("name_fa"),
+                "name_en": d.get("name_en"),
+                "format": d.get("format"),
                 "format_fa": d.get("format_fa"),
+                "format_en": d.get("format_en"),
                 "time_cap_sec": d.get("time_cap_sec"),
                 "description_fa": d.get("description_fa"),
+                "description_en": d.get("description_en"),
+                "score_fa": d.get("score_fa"),
+                "score_en": d.get("score_en"),
                 "blocks": d.get("blocks"),
             })
         except Exception:
@@ -81,11 +87,12 @@ def wods():
 def divisions():
     from config.settings import DATA_DIR
     data = json_load(Path(DATA_DIR) / "divisions.json")
-    grouped: dict[str, list] = {"آقایان": [], "بانوان": []}
+    grouped: dict[str, list] = {"Men": [], "Women": []}
     for d in data["divisions"]:
-        key = "آقایان" if d["sex"] == "M" else "بانوان"
+        key = "Men" if d["sex"] == "M" else "Women"
         grouped[key].append({
             "id": d["id"], "label_fa": d["label_fa"],
+            "label_en": d.get("label_en") or d["label_fa"],
             "weight_kg": d.get("weight_kg"),
             "weights_verified": data.get("weights_verified", False),
         })
@@ -120,15 +127,15 @@ async def create_job(
     mock_faults: Optional[str] = Form(None),
 ):
     if store is None:
-        raise HTTPException(503, "سرویس آماده نیست")
+        raise HTTPException(503, "Service is not ready")
     ext = Path(video.filename or "").suffix.lower()
     if ext not in _ALLOWED_EXT:
-        raise HTTPException(415, "فرمت فایل مجاز نیست (MP4/MOV/WebM)")
+        raise HTTPException(415, "Unsupported file format (allowed: MP4 / MOV / WebM)")
     # validate the division against the registry
     from config.settings import DATA_DIR
     divisions = json_load(Path(DATA_DIR) / "divisions.json")["divisions"]
     if not any(d["id"] == division for d in divisions):
-        raise HTTPException(422, "رده سنی انتخاب‌شده معتبر نیست")
+        raise HTTPException(422, "Selected division is not valid")
 
     job_id = None
     updir: Optional[Path] = None
@@ -144,8 +151,8 @@ async def create_job(
                 size += len(chunk)
                 if size > MAX_UPLOAD_BYTES:
                     raise HTTPException(
-                        413, f"حجم فایل بیش از سقف مجاز "
-                             f"({MAX_UPLOAD_BYTES // (1024**3)} گیگابایت) است")
+                        413, f"File exceeds the maximum allowed size "
+                             f"({MAX_UPLOAD_BYTES // (1024**3)} GB)")
                 f.write(chunk)
     except HTTPException:
         if updir and updir.exists():
@@ -154,7 +161,7 @@ async def create_job(
     except Exception as e:
         if updir and updir.exists():
             shutil.rmtree(updir, ignore_errors=True)
-        raise HTTPException(500, f"خطا در ذخیره فایل: {e}")
+        raise HTTPException(500, f"Failed to store the file: {e}")
     finally:
         await video.close()
 
@@ -201,17 +208,17 @@ async def create_job(
 @app.get("/api/jobs")
 def list_jobs():
     if store is None:
-        raise HTTPException(503, "سرویس آماده نیست")
+        raise HTTPException(503, "Service is not ready")
     return {"jobs": store.list()}
 
 
 @app.get("/api/jobs/{job_id}")
 def job_status(job_id: str):
     if store is None:
-        raise HTTPException(503, "سرویس آماده نیست")
+        raise HTTPException(503, "Service is not ready")
     job = store.get(job_id)
     if job is None:
-        raise HTTPException(404, "تحلیل یافت نشد")
+        raise HTTPException(404, "Analysis not found")
     result = None
     if job["status"] == "done":
         result = store.get_result(job_id)
@@ -221,12 +228,12 @@ def job_status(job_id: str):
 @app.get("/api/jobs/{job_id}/result")
 def job_result(job_id: str):
     if store is None:
-        raise HTTPException(503, "سرویس آماده نیست")
+        raise HTTPException(503, "Service is not ready")
     if store.get(job_id) is None:
-        raise HTTPException(404, "تحلیل یافت نشد")
+        raise HTTPException(404, "Analysis not found")
     result = store.get_result(job_id)
     if result is None:
-        raise HTTPException(409, "نتیجه هنوز آماده نیست")
+        raise HTTPException(409, "Result is not ready yet")
     return result
 
 
@@ -236,11 +243,11 @@ _RANGE_RE = re.compile(r"bytes=(\d*)-(\d*)")
 @app.get("/api/jobs/{job_id}/video")
 def job_video(job_id: str, variant: str = "review"):
     if store is None:
-        raise HTTPException(503, "سرویس آماده نیست")
+        raise HTTPException(503, "Service is not ready")
     name = "review.mp4" if variant == "review" else "original.mp4"
     path = UPLOADS_DIR / job_id / name
     if not path.exists():
-        raise HTTPException(404, "ویدیو یافت نشد")
+        raise HTTPException(404, "Video not found")
     return FileRangeResponse(path)
 
 

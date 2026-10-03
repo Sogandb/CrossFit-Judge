@@ -5,10 +5,13 @@
   "source": "Wodx League — video-judge pilot WOD",
   "format": "FOR_TIME",
   "format_fa": "برای زمان (با محدودیت زمانی)",
+  "format_en": "For Time (with time cap)",
   "time_cap_sec": 600,
   "video_max_sec": 900,
   "description_fa": "به ترتیب انجام شود: ۱۸ تراستر سپس ۱۸ بورپی رو به بار، ۱۵ تراستر سپس ۱۵ بورپی، ۱۲، ۹، ۶ و ۳. زمان استاندارد: ۱۰ دقیقه.",
+  "description_en": "Perform in order: 18 thrusters then 18 bar-facing burpees, 15 thrusters then 15 bar-facing burpees, then 12, 9, 6 and 3. Time cap: 10 minutes. Total: 126 reps.",
   "score_fa": "اگر وادی کامل شود: زمان پایان (کمتر بهتر). اگر در محدودیت زمانی کامل نشود: تعداد رپ‌های تأییدشده تا پایان دقیقه دهم.",
+  "score_en": "If the workout is completed: finish time (lower is better). If not completed within the cap: total credited reps at the 10-minute mark.",
   "blocks": [
     { "movement": "thruster", "reps": 18 },
     { "movement": "bar_facing_burpee", "reps": 18 },
