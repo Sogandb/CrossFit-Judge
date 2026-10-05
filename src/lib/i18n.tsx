@@ -110,8 +110,8 @@ export const DICT: Record<string, Entry> = {
   "proc.cancel": { en: "Cancel", fa: "لغو" },
   "proc.uploadingLabel": { en: "Uploading…", fa: "در حال ارسال…" },
   "proc.uploadChunkHint": {
-    en: "Large videos are sent in small resumable chunks — if the connection drops, only the current chunk is retried.",
-    fa: "ویدیوهای حجیم به‌صورت تکه‌های کوچکِ قابل ازسرگیری ارسال می‌شوند — با قطع شدن اتصال، فقط همان تکه دوباره ارسال می‌شود.",
+    en: "Your video is sent in small adaptive chunks — the size tunes itself to your connection, and interrupted uploads resume automatically.",
+    fa: "ویدیو در قالب تکه‌های کوچکِ هوشمند ارسال می‌شود — اندازهٔ تکه‌ها خودکار با اتصال شما تنظیم می‌شود و در صورت قطع شدن، از همان‌جا ادامه می‌یابد.",
   },
   "proc.hint": {
     en: "A 12–15 minute video takes a few minutes on a typical server. This page updates automatically.",

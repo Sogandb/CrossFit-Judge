@@ -122,9 +122,18 @@ def test_history(client):
 
 
 # --------------------------------------------------------------------------- #
-# Chunked / resumable upload
+# Chunked / resumable upload (byte-offset protocol, multipart + raw)
 # --------------------------------------------------------------------------- #
 _OCTET = {"content-type": "application/octet-stream"}
+
+
+def _chunk_multipart(client, job_id, offset, data, total=None):
+    """Send one chunk exactly the way the browser does (multipart)."""
+    files = {"blob": ("chunk", data)}
+    fields = {"offset": str(offset)}
+    if total is not None:
+        fields["total_bytes"] = str(total)
+    return client.post(f"/api/jobs/{job_id}/chunk", data=fields, files=files)
 
 
 def test_chunked_upload_flow(client, tiny_mp4):
@@ -143,25 +152,28 @@ def test_chunked_upload_flow(client, tiny_mp4):
     assert r.status_code == 200, r.text
     init = r.json()
     job_id = init["job_id"]
-    assert init["expected_index"] == 0 and init["chunk_size"] > 0
+    assert init["received"] == 0 and init["chunk_size"] > 0
 
-    # out-of-order chunk (index 1 before 0) → 409 + expected_index
-    r = client.post(f"/api/jobs/{job_id}/chunk", params={"index": 1, "total": 2},
-                    content=data[:10], headers=_OCTET)
+    # gap: chunk that starts beyond received → 409 + server truth
+    r = _chunk_multipart(client, job_id, 100, data[:10])
     assert r.status_code == 409
-    assert r.json()["expected_index"] == 0
+    assert r.json()["received"] == 0
 
-    half = len(data) // 2
-    r = client.post(f"/api/jobs/{job_id}/chunk", params={"index": 0, "total": 2},
-                    content=data[:half], headers=_OCTET)
+    # mixed variable sizes: quarter → half of the remainder → rest
+    q1 = len(data) // 4
+    r = _chunk_multipart(client, job_id, 0, data[:q1], total=len(data))
     assert r.status_code == 200, r.text
-    assert r.json()["received"] == half
+    assert r.json()["received"] == q1
 
-    # retried duplicate of chunk 0 → idempotent ack, no extra bytes
-    r = client.post(f"/api/jobs/{job_id}/chunk", params={"index": 0, "total": 2},
-                    content=data[:half], headers=_OCTET)
+    # retried duplicate (same offset) → idempotent ack, no extra bytes
+    r = _chunk_multipart(client, job_id, 0, data[:q1], total=len(data))
     assert r.status_code == 200 and r.json().get("duplicate") is True
-    assert r.json()["received"] == half
+    assert r.json()["received"] == q1
+
+    # overlapping retry (older offset) → still idempotent
+    r = _chunk_multipart(client, job_id, q1 // 2, data[:8])
+    assert r.status_code == 200 and r.json().get("duplicate") is True
+    assert r.json()["received"] == q1
 
     # premature complete → 400 (missing bytes)
     r = client.post(f"/api/jobs/{job_id}/complete")
@@ -172,10 +184,17 @@ def test_chunked_upload_flow(client, tiny_mp4):
     assert r.status_code == 200
     st = r.json()
     assert st["complete"] is False and st["registered"] is False
-    assert st["expected_index"] == 1 and st["received"] == half
+    assert st["received"] == q1 and st["total_bytes"] == len(data)
 
-    r = client.post(f"/api/jobs/{job_id}/chunk", params={"index": 1, "total": 2},
-                    content=data[half:], headers=_OCTET)
+    # second chunk — different size (protocol allows per-request sizes)
+    q2 = q1 + (len(data) - q1) // 2
+    r = _chunk_multipart(client, job_id, q1, data[q1:q2])
+    assert r.status_code == 200, r.text
+    assert r.json()["received"] == q2
+
+    # raw octet-stream shape (curl / scripts) also works
+    r = client.post(f"/api/jobs/{job_id}/chunk", params={"offset": q2},
+                    content=data[q2:], headers=_OCTET)
     assert r.status_code == 200, r.text
     assert r.json()["received"] == len(data)
 
@@ -193,7 +212,39 @@ def test_chunked_upload_flow(client, tiny_mp4):
     assert (UPLOADS_DIR / job_id / "original.mp4").read_bytes() == data
 
 
-def test_chunked_init_validation(client):
+def test_chunked_partial_write_rollback(client, tiny_mp4):
+    """A raw attempt that dies mid-write must not corrupt the stream: the
+    next chunk truncates back to the acknowledged size."""
+    from config.settings import UPLOADS_DIR
+    data = tiny_mp4.read_bytes()
+    r = client.post("/api/jobs/init", data={
+        "filename": "sample.mp4", "total_bytes": str(len(data)),
+        "division": "m_18_34_rx", "claimed_reps": "10",
+        "pose_source": "mock", "mock_block_scale": "0.15",
+    })
+    assert r.status_code == 200, r.text
+    job_id = r.json()["job_id"]
+
+    half = len(data) // 2
+    assert _chunk_multipart(client, job_id, 0, data[:half]).status_code == 200
+
+    # simulate a torn raw write: garbage appended beyond `received`
+    part = UPLOADS_DIR / job_id / "original.mp4.part"
+    with open(part, "ab") as f:
+        f.write(b"\xde\xad\xbe\xef" * 100)
+
+    # next chunk at the server-truth offset → truncates the garbage first
+    r = client.post(f"/api/jobs/{job_id}/chunk", params={"offset": half},
+                    content=data[half:], headers=_OCTET)
+    assert r.status_code == 200, r.text
+    assert r.json()["received"] == len(data)
+
+    r = client.post(f"/api/jobs/{job_id}/complete")
+    assert r.status_code == 200, r.text
+    assert (UPLOADS_DIR / job_id / "original.mp4").read_bytes() == data
+
+
+def test_chunked_protocol_validation(client):
     r = client.post("/api/jobs/init",
                     data={"filename": "clip.avi", "division": "m_18_34_rx"})
     assert r.status_code == 415
@@ -207,8 +258,29 @@ def test_chunked_init_validation(client):
     # unknown session → 404 everywhere
     r = client.get("/api/jobs/does-not-exist/session")
     assert r.status_code == 404
-    r = client.post("/api/jobs/does-not-exist/chunk", params={"index": 0, "total": 1},
-                    content=b"x", headers=_OCTET)
+    r = client.post("/api/jobs/does-not-exist/chunk",
+                    params={"offset": 0}, content=b"x", headers=_OCTET)
     assert r.status_code == 404
     r = client.post("/api/jobs/does-not-exist/complete")
     assert r.status_code == 404
+
+    # known session, malformed requests
+    r = client.post("/api/jobs/init",
+                    data={"filename": "clip.mp4", "division": "m_18_34_rx"})
+    assert r.status_code == 200, r.text
+    job_id = r.json()["job_id"]
+    # raw without offset → 422
+    r = client.post(f"/api/jobs/{job_id}/chunk", content=b"x", headers=_OCTET)
+    assert r.status_code == 422
+    # multipart without the blob file part → 422
+    r = client.post(f"/api/jobs/{job_id}/chunk",
+                    data={"offset": "0"})
+    assert r.status_code == 422
+    # multipart with a non-integer offset → 422
+    r = client.post(f"/api/jobs/{job_id}/chunk", data={"offset": "abc"},
+                    files={"blob": ("c", b"x")})
+    assert r.status_code == 422
+    # negative offset → 422
+    r = client.post(f"/api/jobs/{job_id}/chunk", params={"offset": -3},
+                    content=b"x", headers=_OCTET)
+    assert r.status_code == 422

@@ -313,15 +313,13 @@ export function UploadForm({ grouped, weightsVerified, onSubmit, onCancelUpload,
           <div className="flex items-center justify-between text-xs text-ink-3">
             <span>{t("proc.uploadingLabel")}</span>
             <span className="tabular-nums">
-              {uploadPct}%{file ? ` · ${(file.size / 1048576).toFixed(0)} MB` : ""}
+              {uploadPct}%{file ? ` · ${((uploadPct / 100) * file.size / 1048576).toFixed(1)} / ${(file.size / 1048576).toFixed(1)} MB` : ""}
             </span>
           </div>
           <Progress value={uploadPct} className="h-2" />
-          {file && file.size > 16 * 1024 * 1024 && (
-            <p className="text-[11px] leading-relaxed text-ink-4">
-              {t("proc.uploadChunkHint")}
-            </p>
-          )}
+          <p className="text-[11px] leading-relaxed text-ink-4">
+            {t("proc.uploadChunkHint")}
+          </p>
           {onCancelUpload && (
             <Button
               onClick={onCancelUpload}

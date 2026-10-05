@@ -25,6 +25,7 @@ from typing import Optional
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
+from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from config.settings import (
     MAX_UPLOAD_BYTES,
@@ -181,21 +182,33 @@ async def create_job(
 # Chunked / resumable upload (large videos through constrained proxies)
 #
 # A single giant multipart POST can stall inside reverse proxies / tunnels
-# that cap or buffer large request bodies (observed: upload frozen at 0%).
-# The client therefore splits the video into small sequential chunks:
-#   POST /api/jobs/init               → form fields, creates the session
-#   POST /api/jobs/{id}/chunk?index=N → raw octet-stream body, appended
-#   GET  /api/jobs/{id}/session       → resume probe (received/expected)
-#   POST /api/jobs/{id}/complete      → finalize + register the job
-# Chunks are strictly in-order (idempotent re-ack for retried ones); the
-# part file is truncated back to the acknowledged size before every append,
-# so a failed/timed-out attempt never corrupts the stream.
+# that cap or buffer large request bodies (observed: upload frozen at 0-1%,
+# body never reaching the server). The client therefore splits the video into
+# small sequential chunks and ADAPTS the chunk size to whatever the transport
+# actually allows (ramping up / backing off at runtime):
+#   POST /api/jobs/init                → form fields, creates the session
+#   POST /api/jobs/{id}/chunk          → one chunk; TWO wire shapes:
+#        • multipart/form-data  (fields: offset[, total_bytes]; file: "blob")
+#                               — same request shape as /init, which passes
+#                                 even through strict tunnels/WAFs
+#        • raw body (any type) with ?offset=N — for curl / scripts
+#   GET  /api/jobs/{id}/session        → resume probe (received bytes)
+#   POST /api/jobs/{id}/complete       → finalize + register the job
+# Chunks are byte-offset based (sizes may vary per request): append happens
+# only when offset == received; the part file is truncated back to the
+# acknowledged size before every append, so a failed/timed-out attempt never
+# corrupts the stream. Retried/overlapping chunks are acked idempotently with
+# the server's authoritative byte count.
 # --------------------------------------------------------------------------- #
 _SESSION_NAME = "session.json"
 _PART_NAME = "original.mp4.part"
 _STALE_SESSION_SEC = 24 * 3600
 _SWEEP_INTERVAL_SEC = 600
-CHUNK_SUGGEST_BYTES = 8 * 1024 * 1024
+# Suggested START chunk size — the client ramps up from here and backs off
+# on stalls, so this only needs to be small enough for constrained tunnels.
+CHUNK_SUGGEST_BYTES = 256 * 1024
+# Hard per-chunk cap (protocol violations rejected server-side too).
+MAX_CHUNK_BYTES = 32 * 1024 * 1024
 
 _sess_locks: "dict[str, threading.Lock]" = {}
 _sess_locks_guard = threading.Lock()
@@ -346,36 +359,108 @@ async def init_upload(
         "filename": filename,
         "total_bytes": total_bytes,
         "received": 0,
-        "expected_index": 0,
         "meta": meta,
     })
     return {"job_id": job_id, "chunk_size": CHUNK_SUGGEST_BYTES,
-            "received": 0, "expected_index": 0}
+            "received": 0}
+
+
+async def _drain_body(request: Request) -> None:
+    """Read and discard the request body (prevents connection resets when we
+    answer early) — for both raw bodies and fully-buffered multipart ones."""
+    try:
+        async for _ in request.stream():
+            pass
+    except Exception:
+        pass
 
 
 @app.post("/api/jobs/{job_id}/chunk")
-async def upload_chunk(job_id: str, index: int, total: int, request: Request):
+async def upload_chunk(job_id: str, request: Request,
+                       offset: Optional[int] = None):
+    """Append one chunk at a byte offset.
+
+    Wire shapes (auto-detected from the content type):
+      • multipart/form-data — form field "offset" (int) + file part "blob";
+        optional "total_bytes" field (session sanity check).
+      • raw body — query parameter ?offset=N.
+
+    Responses:
+      200 {job_id, received, duplicate}  — appended (or idempotent re-ack
+          when the bytes are already stored: offset < received)
+      409 {detail, received}             — gap detected (offset > received);
+          the client resyncs to the server's authoritative byte count
+      413/415/422/404                    — permanent errors (no retry)
+    """
     if store is None:
         raise HTTPException(503, "Service is not ready")
     sess = _sess_load(job_id)
     if sess is None:
         raise HTTPException(404, "Upload session not found (expired or already finished)")
-    if index < sess["expected_index"]:
-        # Retried chunk the server already stored — DRAIN the body first so the
-        # client never sees a connection reset on an early response, then ack
-        # idempotently (no extra bytes written).
-        async for _ in request.stream():
-            pass
-        return {"job_id": job_id, "received": sess["received"],
-                "expected_index": sess["expected_index"], "duplicate": True}
-    if index > sess["expected_index"]:
-        async for _ in request.stream():
-            pass
-        return JSONResponse(status_code=409, content={
-            "detail": "Out-of-order chunk", "expected_index": sess["expected_index"]})
 
-    part = _sess_dir(job_id) / _PART_NAME
+    ctype = (request.headers.get("content-type") or "").lower()
+    is_multipart = ctype.startswith("multipart/")
+
+    # ---- extract (offset, byte stream) from either wire shape ---------- #
+    if is_multipart:
+        form = await request.form()
+        blob = form.get("blob")
+        if not isinstance(blob, StarletteUploadFile):
+            raise HTTPException(422, "Multipart chunk needs a 'blob' file part")
+        off_raw = form.get("offset")
+        if off_raw is None and offset is None:
+            raise HTTPException(422, "Multipart chunk needs an 'offset' field")
+        try:
+            off = int(str(off_raw)) if off_raw is not None else int(offset)
+        except (TypeError, ValueError):
+            raise HTTPException(422, "offset must be an integer")
+        if blob.size is not None and blob.size > MAX_CHUNK_BYTES:
+            raise HTTPException(413, "Chunk too large")
+        total_field = form.get("total_bytes")
+        if total_field is not None:
+            try:
+                if sess.get("total_bytes") is None:
+                    sess["total_bytes"] = int(str(total_field))
+            except (TypeError, ValueError):
+                pass
+
+        async def _byte_iter():
+            while True:
+                piece = await blob.read(4 * 1024 * 1024)
+                if not piece:
+                    break
+                yield piece
+    else:
+        off = offset
+        if off is None:
+            raise HTTPException(422, "Query parameter 'offset' is required for raw chunks")
+
+        async def _byte_iter():
+            async for piece in request.stream():
+                yield piece
+
+    if off < 0:
+        raise HTTPException(422, "offset must be >= 0")
+
     received = sess["received"]
+
+    # ---- idempotent re-ack: bytes already stored ------------------------ #
+    if off < received:
+        if not is_multipart:
+            await _drain_body(request)
+        return {"job_id": job_id, "received": received, "duplicate": True}
+
+    # ---- gap: client is ahead of the server ----------------------------- #
+    if off > received:
+        if not is_multipart:
+            await _drain_body(request)
+        return JSONResponse(status_code=409, content={
+            "detail": "Byte gap: this chunk starts beyond the received size",
+            "received": received})
+
+    # ---- append at off == received --------------------------------------- #
+    part = _sess_dir(job_id) / _PART_NAME
+    written = 0
     limit_hit = False
     with _sess_lock(job_id):
         # Rewind any partial write left by a failed attempt → retries are
@@ -383,8 +468,7 @@ async def upload_chunk(job_id: str, index: int, total: int, request: Request):
         with open(part, "r+b" if part.exists() else "wb") as f:
             f.truncate(received)
             f.seek(received)
-            written = 0
-            async for data in request.stream():
+            async for data in _byte_iter():
                 written += len(data)
                 if received + written > MAX_UPLOAD_BYTES:
                     limit_hit = True
@@ -396,10 +480,9 @@ async def upload_chunk(job_id: str, index: int, total: int, request: Request):
             raise HTTPException(
                 413, f"File exceeds the maximum allowed size "
                       f"({MAX_UPLOAD_BYTES // (1024**3)} GB)")
-        _sess_save(job_id, {**sess, "received": received + written,
-                            "expected_index": index + 1})
+        _sess_save(job_id, {**sess, "received": received + written})
     return {"job_id": job_id, "received": received + written,
-            "expected_index": index + 1, "duplicate": False}
+            "duplicate": False}
 
 
 @app.get("/api/jobs/{job_id}/session")
@@ -412,7 +495,6 @@ def upload_session_state(job_id: str):
         raise HTTPException(404, "Upload session not found")
     return {"job_id": job_id, "complete": False, "registered": False,
             "received": sess["received"],
-            "expected_index": sess["expected_index"],
             "total_bytes": sess.get("total_bytes")}
 
 
@@ -426,12 +508,16 @@ def complete_upload(job_id: str):
     total = sess.get("total_bytes")
     if total is not None and sess["received"] != total:
         raise HTTPException(
-            400, f"Upload incomplete: received {sess['received']} of {total} bytes "
-                 f"(next expected chunk index is {sess['expected_index']})")
+            400, f"Upload incomplete: received {sess['received']} of {total} bytes")
     updir = _sess_dir(job_id)
     part = updir / _PART_NAME
     if not part.exists() or part.stat().st_size == 0:
         raise HTTPException(400, "No data uploaded for this session")
+    # A raw-mode attempt that died mid-write can leave the part file longer
+    # than the acknowledged size — trim to the authoritative byte count.
+    if part.stat().st_size != sess["received"]:
+        with open(part, "r+b") as f:
+            f.truncate(sess["received"])
     dst = updir / "original.mp4"
     part.rename(dst)
     (updir / _SESSION_NAME).unlink(missing_ok=True)
