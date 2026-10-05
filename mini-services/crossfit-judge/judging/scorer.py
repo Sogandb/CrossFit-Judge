@@ -71,7 +71,9 @@ def reconcile(sequencer_summary: dict, claimed: Optional[dict]) -> dict:
 
 
 def score_display(summary: dict) -> dict:
-    """Human-friendly score line (bilingual)."""
+    """Human-friendly score line (bilingual) + overall analysis confidence."""
+    conf = summary.get("analysis_confidence")
+    conf_pct = f"{int(round(conf * 100))}%" if conf is not None else None
     if summary["finished"]:
         ft = summary["finish_time_sec"] or 0
         mm, ss = int(ft // 60), int(ft % 60)
@@ -81,6 +83,11 @@ def score_display(summary: dict) -> dict:
             "score_en": f"Finish time: {mm:02d}:{ss:02d}",
             "status_fa": "وادی کامل شد",
             "status_en": "Finished — the time is the score",
+            "confidence": conf,
+            "confidence_fa": (f"میانگین اطمینان تصمیم‌ها: {conf_pct}"
+                             if conf_pct else None),
+            "confidence_en": (f"Average decision confidence: {conf_pct}"
+                              if conf_pct else None),
         }
     total = summary["total_credited"]
     return {
@@ -89,4 +96,9 @@ def score_display(summary: dict) -> dict:
         "score_en": f"{total} reps within the time cap",
         "status_fa": "در زمان مجاز کامل نشد (کپ)",
         "status_en": "Not completed within the time cap (capped)",
+        "confidence": conf,
+        "confidence_fa": (f"میانگین اطمینان تصمیم‌ها: {conf_pct}"
+                         if conf_pct else None),
+        "confidence_en": (f"Average decision confidence: {conf_pct}"
+                          if conf_pct else None),
     }

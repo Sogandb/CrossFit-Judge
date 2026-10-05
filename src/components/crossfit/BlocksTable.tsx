@@ -22,6 +22,7 @@ export function BlocksTable({ result }: { result: AnalysisResult }) {
             <TableRow className="border-edge hover:bg-transparent">
               <TableHead className="text-muted-foreground text-xs">{t("res.round")}</TableHead>
               <TableHead className="text-muted-foreground text-xs">{t("res.movement")}</TableHead>
+              <TableHead className="text-muted-foreground text-xs">{t("res.repsRange")}</TableHead>
               <TableHead className="text-muted-foreground text-xs">{t("res.prescribed")}</TableHead>
               <TableHead className="text-muted-foreground text-xs">{t("res.credited")}</TableHead>
               <TableHead className="text-muted-foreground text-xs">{t("res.status")}</TableHead>
@@ -35,6 +36,11 @@ export function BlocksTable({ result }: { result: AnalysisResult }) {
                 </TableCell>
                 <TableCell className="text-xs text-ink-2">
                   {MOVEMENT_LABELS[b.movement] ?? b.movement_en ?? b.movement}
+                </TableCell>
+                <TableCell className="text-xs text-ink-3 font-mono tabular-nums">
+                  {b.rep_start != null && b.rep_end != null
+                    ? `${n(b.rep_start)}–${n(b.rep_end)}`
+                    : "—"}
                 </TableCell>
                 <TableCell className="text-xs text-ink-3 tabular-nums">{n(b.reps)}</TableCell>
                 <TableCell>

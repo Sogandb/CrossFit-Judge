@@ -56,6 +56,7 @@ export function RepTable({ events, selectedIdx, onSeek }: Props) {
               <TableHead className="text-muted-foreground text-xs">{t("res.movement")}</TableHead>
               <TableHead className="text-muted-foreground text-xs">{t("res.time")}</TableHead>
               <TableHead className="text-muted-foreground text-xs">{t("res.round")}</TableHead>
+              <TableHead className="text-muted-foreground text-xs">{t("res.confidence")}</TableHead>
               <TableHead className="text-muted-foreground text-xs">{t("res.reason")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -107,6 +108,21 @@ export function RepTable({ events, selectedIdx, onSeek }: Props) {
                     ) : (
                       <span className="text-ink-4">—</span>
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-bold tabular-nums",
+                        ev.confidence_label === "high" || ev.confidence >= 0.85
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                          : ev.confidence >= 0.65
+                            ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                            : "bg-red-500/10 text-brand-fg",
+                      )}
+                      title={ev.borderline ? t("res.borderlineHint") : undefined}
+                    >
+                      {n(Math.round(ev.confidence * 100))}%
+                    </span>
                   </TableCell>
                   <TableCell className="text-xs max-w-[240px]">
                     {isNoRep ? (

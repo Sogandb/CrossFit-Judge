@@ -121,3 +121,52 @@ def online_ground_update(scene: SceneModel, p: PoseFrame, samples: list[tuple[fl
             scene.set_ground(my - b * mx, b)
         else:
             scene.set_ground(my, 0.0)
+
+
+def online_height_update(scene: SceneModel, p: PoseFrame,
+                         samples: list[float], max_samples: int = 150) -> None:
+    """Analyzer hook: refresh the body-height scale H from clean STANDING
+    frames.
+
+    The preroll calibration locks H once; but the athlete moves along the
+    floor during the workout (perspective changes their pixel height by up
+    to ±30%). All movement thresholds are fractions of H — a stale H makes
+    every check misfire. Standing, upright, fully-visible frames give a
+    reliable instantaneous height (nose→ankle span); a rolling median keeps
+    the update smooth and immune to single-frame outliers.
+    """
+    if not p.person_detected:
+        return
+    nose = p.get("nose")
+    ank_l, ank_r = p.get("left_ankle"), p.get("right_ankle")
+    hip_l, hip_r = p.get("left_hip"), p.get("right_hip")
+    sh_l, sh_r = p.get("left_shoulder"), p.get("right_shoulder")
+    if None in (nose, ank_l, ank_r, hip_l, hip_r, sh_l, sh_r):
+        return
+    min_vis = min(nose.visibility, ank_l.visibility, ank_r.visibility,
+                  sh_l.visibility, sh_r.visibility)
+    if min_vis < 0.5:
+        return
+    # upright torso (shoulders above hips, near-vertical)
+    sh, hip = midpoint(sh_l, sh_r), midpoint(hip_l, hip_r)
+    if sh is None or hip is None:
+        return
+    dx, dy = abs(sh.x - hip.x), (hip.y - sh.y)
+    if dy <= 0 or (dx / max(dy, 1e-6)) > 0.30:
+        return
+    # standing (hips well above knees region): use nose→ankle span
+    ank = midpoint(ank_l, ank_r)
+    if ank is None or ank.y <= nose.y:
+        return
+    h_inst = ank.y - nose.y
+    if h_inst < 50:
+        return
+    samples.append(h_inst)
+    if len(samples) > max_samples:
+        del samples[: len(samples) - max_samples]
+    if len(samples) >= 12:
+        s = sorted(samples)
+        med = s[len(s) // 2]
+        # only adopt a genuinely different scale (avoid jitter-thrashing)
+        if abs(med - scene.H) > 0.08 * scene.H:
+            scene.H = max(50.0, med)

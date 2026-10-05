@@ -52,8 +52,20 @@ export interface BlockSummary {
   reps: number;
   credited: number;
   complete: boolean;
+  rep_start: number;
+  rep_end: number;
   status_fa: string;
   status_en: string;
+}
+
+export interface RepTimelineEntry {
+  block: number;
+  movement: string;
+  movement_fa: string;
+  movement_en: string;
+  rep_start: number;
+  rep_end: number;
+  reps: number;
 }
 
 export interface AnalysisEvent {
@@ -73,6 +85,10 @@ export interface AnalysisEvent {
   review_flags: string[];
   notes: string[];
   notes_en: string[];
+  expected_movement: string | null;
+  confidence: number;
+  confidence_label: "high" | "medium" | "low";
+  borderline: boolean;
 }
 
 export interface StructuredWarning {
@@ -107,10 +123,14 @@ export interface AnalysisResult {
     capped: boolean;
     total_credited: number;
     total_prescribed: number;
+    analysis_confidence: number | null;
+    borderline_reps: number;
     per_movement: Record<string, {
       credited: number; no_reps: number; prescribed: number;
+      avg_confidence: number | null; borderline_reps?: number;
     }>;
     blocks: BlockSummary[];
+    rep_timeline?: RepTimelineEntry[];
   };
   reconciliation: {
     claimed_reps: number | null;
@@ -130,6 +150,9 @@ export interface AnalysisResult {
     score_en: string;
     status_fa: string;
     status_en: string;
+    confidence?: number | null;
+    confidence_fa?: string | null;
+    confidence_en?: string | null;
   };
   events: AnalysisEvent[];
   sequencer_flags: { t: number; code: string; reason_fa: string; reason_en: string }[];

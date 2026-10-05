@@ -67,8 +67,8 @@ def test_full_workout_all_credited():
 def test_no_rep_faults_do_not_score():
     blocks = [{"movement": "thruster", "reps": 2},
               {"movement": "bar_facing_burpee", "reps": 2}]
-    faults = {"thruster": {0: {"depth_h": 0.005}},   # rep 1 no-rep (shallow)
-              "bfb": {0: {"chest_touch": False}}}     # rep 1 no-rep (chest)
+    faults = {"thruster": {0: {"depth_h": -0.05}},   # rep 1 no-rep (no squat)
+              "bfb": {0: {"chest_touch": 0.36}}}    # rep 1 no-rep (chest high)
     seq, _ = _run(_wod(blocks), faults=faults)
     s = seq.summary()
     # the two no-reps must not score; the athlete performed the physical reps

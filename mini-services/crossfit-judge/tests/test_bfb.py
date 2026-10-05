@@ -38,8 +38,9 @@ def test_legal_one_foot_takeoff_credited(scene):
 
 
 def test_chest_not_touching_no_rep(scene):
+    """Chest clearly off the floor (0.36H) → clear fault."""
     frames = make_frames(lambda out: gen_bfb_rep(
-        out, 0.0, _start_x(), GY, H, 0, BAR_X, chest_touch=False))
+        out, 0.0, _start_x(), GY, H, 0, BAR_X, chest_touch=0.36))
     attempts = _collect(frames, scene)
     assert len(attempts) == 1
     a = attempts[0]
@@ -47,15 +48,44 @@ def test_chest_not_touching_no_rep(scene):
     assert a.reason_code == "BFB_CHEST"
 
 
-def test_parallel_to_bar_no_rep(scene):
-    """Body parallel to the bar instead of facing it → fault."""
+def test_chest_borderline_credited_with_review(scene):
+    """Chest 0.25H above the floor — inside the uncertainty band →
+    credited to the athlete (benefit of the doubt) with a review flag."""
     frames = make_frames(lambda out: gen_bfb_rep(
-        out, 0.0, _start_x(), GY, H, 0, BAR_X, facing=False))
+        out, 0.0, _start_x(), GY, H, 0, BAR_X, chest_touch=0.25))
+    attempts = _collect(frames, scene)
+    assert len(attempts) == 1
+    a = attempts[0]
+    assert a.outcome == REP, (a.outcome, a.reason_code, a.details)
+    assert a.borderline is True
+    assert "BFB_CHEST_REVIEW" in a.review_flags
+    assert a.confidence <= 0.82
+
+
+def test_parallel_to_bar_no_rep(scene):
+    """Body clearly parallel to the bar (sustained ~72° measured tilt) → fault.
+    NOTE: the mock's facing parameter maps to a steeper MEASURED shoulder
+    line (facing=40 → ~72° measured)."""
+    frames = make_frames(lambda out: gen_bfb_rep(
+        out, 0.0, _start_x(), GY, H, 0, BAR_X, facing=40.0))
     attempts = _collect(frames, scene)
     assert len(attempts) == 1
     a = attempts[0]
     assert a.outcome == NO_REP
     assert a.reason_code == "BFB_NOT_FACING"
+
+
+def test_facing_borderline_credited_with_review(scene):
+    """Shoulder tilt ~60° measured — camera-geometry band → credited + review
+    flag (a correctly-facing athlete shows a steep shoulder line in side
+    view)."""
+    frames = make_frames(lambda out: gen_bfb_rep(
+        out, 0.0, _start_x(), GY, H, 0, BAR_X, facing=22.0))
+    attempts = _collect(frames, scene)
+    assert len(attempts) == 1
+    a = attempts[0]
+    assert a.outcome == REP, (a.outcome, a.reason_code, a.details)
+    assert "BFB_FACING_REVIEW" in a.review_flags
 
 
 def test_staggered_landing_no_rep(scene):

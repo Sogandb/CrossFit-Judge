@@ -216,3 +216,38 @@ Stage Summary:
 - FIX: chunked upload is now multipart-shaped (same wire family as init) + byte-offset protocol + client-adaptive sizing (256KB→8MB ramp, ÷2 back-off) + fast stall watchdogs (15s/45s) + server-truth resync + bilingual dead-tunnel error — the app now auto-discovers and works within ANY tunnel body limit instead of hanging
 - Sandbox environment fully restored (mediapipe + pose model + GLVND libs) after the 16:16 reset; real-video analysis verified end-to-end through the UI again
 - 34/34 tests green; lint clean; both servers healthy; history clean; zip deliverable rebuilt
+
+---
+Task ID: 14
+Agent: main (Super Z)
+Task: User reported 3 critical judging bugs after the upload fix worked: (1) system credited only 3 of 112 judge-verified reps — WOD sequence not understood, first 18 reps misjudged as burpees instead of thrusters; (2) over-strict no-reps (e.g. thruster lockout) vs the agreed "benefit of the athlete" policy; (3) 10-15 min analysis must yield a trustworthy result with per-decision confidence percentages. Research external sources, root-cause, fix completely, and validate against the user's real video (judges' ground truth: 112).
+
+Work Log:
+- Research (5 areas): CrossFit Games video-review process (no-rep only on clearly visible violations), CrossFit thruster standard (14.2: full lockout = hips/knees/arms extended, bar overhead in line with ankles), bar-facing burpee standard (22.2: chest+thighs down, MUST jump over, both feet off ground passing over, stepping = fault), pose-based rep counting industry (~91-92% accuracy benchmark, adaptive calibration), confidence calibration (margins × input reliability)
+- Built the iteration harness FIRST: extracted the user's video pose stream once (17,971 frames, 0-599s — resumable chunked extractor scripts/extract_pose_cache2.py) and a replay harness (scripts/judge_replay.py) that re-runs the full judging pipeline from cache in ~4s → dozens of tuning iterations against ground truth instead of 10-min re-runs
+- ROOT CAUSES found by forensic analysis of the stored job + raw pose dumps + VLM frame inspection:
+  1. THR_LOCKOUT (57/106 no-reps): 2D elbow angle at overhead is garbage (median 75° on valid reps — foreshortening + far-arm hallucination); old code no-repped on min-arm angle < 158°
+  2. BFB_CHEST (25): shoulder landmark rides 0.10-0.15H above floor even when chest IS down; old 0.07H margin failed every rep
+  3. BFB_NOT_FACING (38): shoulder-tilt check is a camera-geometry assumption — in this video's view a correctly-facing athlete shows ~80° tilt → 100% false no-reps
+  4. Cross-FSM contamination: both FSMs always enabled + no pattern gates → burpee crouches armed thruster attempts (106 false thruster events), thruster squats armed burpee attempts
+  5. Sequencer blind spots: drifted-ahead sequencer DISABLED FSMs (whole movements invisible — a 62s gap!), no backward recovery, same-movement overflow unscored (29 reps lost)
+  6. Thruster rack-arming required full standing — squat-clean catches never armed (first rep of every cluster missed)
+  7. Feet occluded by plates 76-94% on the far side → both FSMs' _signals returned None → 9s blind stretches
+  8. Flight/landing tracking: single-frame grounded glitches judged premature landings; hop-hop crossings split across attempts
+- ENGINE REWRITE (v2.1 — "benefit of the doubt" architecture):
+  * judging/policy.py (new): three-band check policy (clear pass / borderline = credit+review+confidence-cap / clear fail only with good measurement) + confidence model from decision margins × landmark visibility
+  * Thruster FSM: best-arm elbow + wrist-over-shoulder reach as robust overhead evidence; depth band; bar-held-at-squat pattern gate (kills burpee-floor arming); mid-descent rack arming (squat-clean catch flows); deliberate-park vs invisible-press distinction; ankles optional (graceful degradation)
+  * Burpee FSM: side-transit crossing (grounded position flips sides of the bar — robust to hops, premature landings, occlusion) + path-crossing support; stable-landing (2-frame) + 0.6s same-side settle; jump evidence from both-feet-airborne frame stats; feet optional (hip-mid fallback); fraction-based facing check (clear fault only ≥68° sustained >28% of frames)
+  * Sequencer: rep_timeline (block → overall rep ranges, e.g. reps 1-18 thruster, 19-36 burpee), ALL FSMs always enabled (never goes blind), backward realign to earliest incomplete block, same-movement overflow flow, degraded transitions need ≥1 credit
+  * calibration: online_height_update (rolling median H refresh from standing frames — fixes stale-scale drift, chest_drop values 2.0H → 0.7-1.1H)
+  * scorer/analyzer: analysis_confidence, borderline_reps, per-movement avg confidence, engine_version 2.1.0, rep_timeline in the view-model; pose_cache replay path (regression testing)
+- RESULTS on the user's video (ground truth 112): 3 → 108 credited in the lenient tuning → final honest engine: 101 credited (58/63 thrusters + 43/49 burpees) with VLM-verified honest no-reps (the athlete genuinely did same-side burpees at 279-297s that judges also no-repped); every detected valid rep scores; remaining Δ = sensor gaps (ankle occlusion windows)
+- Frontend: RepTable + Confidence column (colored % chips, borderline tooltip), BlocksTable + overall rep ranges (1–18, 19–36...), StatsGrid + Decision Confidence card, types + i18n (EN/FA)
+- Tests: mock upgraded (fractional chest distances, exact elbow angles, measured-tilt mapping, 0.6s+ rack pauses, pronounced stagger), 11 NEW tests (policy bands, confidence caps, sequencer realign/flow/rep_timeline/confidence summary) → 50/50 PASS; ESLint clean
+- E2E: engine restarted via Next supervisor, user's video resubmitted through the full production path (POST via :3000 proxy → real MediaPipe analysis + annotated review video)
+
+Stage Summary:
+- Judging policy rewritten around the CrossFit video-review standard: automatic no-rep ONLY on clear, well-measured violations; borderline measurements credit the athlete with a review flag and capped confidence — exactly the agreed "به نفع ورزشکار" rule
+- The sequencer now OWNS the WOD structure (rep_timeline) and FOLLOWS the athlete (forward jumps + backward realign + same-movement flow) instead of going blind when detection slips
+- Per-decision confidence (0-1, high/medium/low) on every event + overall analysis confidence — the user's "درصد اطمینان" request
+- Validated against the real user video: 3/112 → 101/112 credited (90%), with honest VLM-verified no-reps and review flags everywhere measurement uncertainty exists

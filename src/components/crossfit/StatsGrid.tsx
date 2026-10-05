@@ -1,10 +1,10 @@
 "use client";
 
-import { CheckCircle2, XCircle, ListOrdered, Clock } from "lucide-react";
+import { CheckCircle2, XCircle, ListOrdered, Clock, Gauge } from "lucide-react";
 import type { AnalysisResult } from "./types";
 import { useLang } from "@/lib/i18n";
 
-/** v1 StatsGrid — the four KPI cards. */
+/** v1 StatsGrid — the KPI cards (v2.1: + overall decision confidence). */
 
 export function StatsGrid({ result }: { result: AnalysisResult }) {
   const { t, n } = useLang();
@@ -13,6 +13,8 @@ export function StatsGrid({ result }: { result: AnalysisResult }) {
   const noRepCount = result.events.filter(
     (e) => e.outcome === "no_rep" && !e.post_cap,
   ).length;
+
+  const conf = summary.analysis_confidence;
 
   const stats = [
     {
@@ -45,10 +47,26 @@ export function StatsGrid({ result }: { result: AnalysisResult }) {
       color: "text-ink-2",
       bg: "bg-chip",
     },
+    ...(conf != null
+      ? [{
+          label: t("res.overallConfidence"),
+          value: `${n(Math.round(conf * 100))}%`,
+          icon: Gauge,
+          color:
+            conf >= 0.85
+              ? "text-emerald-500 dark:text-emerald-400"
+              : conf >= 0.65
+                ? "text-amber-500 dark:text-amber-400"
+                : "text-brand-fg",
+          bg: "bg-chip",
+        }]
+      : []),
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className={stats.length > 4
+      ? "grid grid-cols-2 lg:grid-cols-5 gap-3"
+      : "grid grid-cols-2 lg:grid-cols-4 gap-3"}>
       {stats.map((s) => (
         <div
           key={s.label}

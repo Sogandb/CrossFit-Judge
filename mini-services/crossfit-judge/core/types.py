@@ -94,6 +94,8 @@ class Attempt:
     reason_code: Optional[str] = None  # why no-rep (or None when credited)
     details: dict = field(default_factory=dict)
     review_flags: list[str] = field(default_factory=list)  # reason codes to review
+    confidence: float = 1.0            # 0..1 — reliability of THIS decision
+    borderline: bool = False           # decision made inside the uncertainty band
 
     def to_dict(self) -> dict:
         return {
@@ -106,4 +108,16 @@ class Attempt:
             "reason_code": self.reason_code,
             "details": self.details,
             "review_flags": list(self.review_flags),
+            "confidence": round(self.confidence, 2),
+            "confidence_label": confidence_label(self.confidence),
+            "borderline": self.borderline,
         }
+
+
+def confidence_label(c: float) -> str:
+    """Human-facing bucket for a confidence value."""
+    if c >= 0.85:
+        return "high"
+    if c >= 0.65:
+        return "medium"
+    return "low"

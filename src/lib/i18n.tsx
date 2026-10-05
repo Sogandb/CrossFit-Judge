@@ -177,6 +177,13 @@ export const DICT: Record<string, Entry> = {
   "res.verdictGood": { en: "Good", fa: "تأیید" },
   "res.verdictNoRep": { en: "No-Rep", fa: "نو-رپ" },
   "res.verdict": { en: "Verdict", fa: "رأی" },
+  "res.confidence": { en: "Confidence", fa: "اطمینان" },
+  "res.overallConfidence": { en: "Decision Confidence", fa: "اطمینان تصمیم‌ها" },
+  "res.borderlineHint": {
+    en: "Borderline call — credited with benefit of the doubt; flagged for human review",
+    fa: "تصمیم مرزی — به نفع ورزشکار شمرده شد؛ برای بازبینی انسانی علامت خورد",
+  },
+  "res.repsRange": { en: "Reps (overall)", fa: "رپ‌ها (کل)" },
   "res.postCap": { en: "Post-Cap", fa: "بعد از کپ" },
   "res.needReview": { en: "Review", fa: "بازبینی" },
   "res.reason": { en: "Reason", fa: "دلیل" },

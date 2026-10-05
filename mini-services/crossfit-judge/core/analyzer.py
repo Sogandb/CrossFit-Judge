@@ -17,7 +17,7 @@ from config.settings import (
     PREROLL_SEC,
     TARGET_FPS,
 )
-from core.calibration import calibrate, online_ground_update
+from core.calibration import calibrate, online_ground_update, online_height_update
 from core.frame_source import FrameSource, probe
 from core.mock_pose import gen_synthetic_workout
 from core.pose_detector import PoseDetector
@@ -113,6 +113,7 @@ class Analyzer:
         # ---------------- 4. pose source ---------------- #
         detector = None
         src = None
+        cache_path = self.meta.get("pose_cache")   # dev/validation replay
         if mock:
             blocks = self._wod_blocks_for_mock()
             frames = gen_synthetic_workout(
@@ -121,6 +122,14 @@ class Analyzer:
             pose_source = _MockDetector(frames)
             frame_iter = _MockFrameIterator(len(frames))
             total_frames = len(frames)
+        elif cache_path:
+            import pickle
+            with open(cache_path, "rb") as f:
+                data = pickle.load(f)
+            cached = data["frames"]
+            pose_source = _ReplayDetector(cached)
+            frame_iter = _ReplayIterator(cached)
+            total_frames = max(1, len(cached))
         else:
             detector = PoseDetector()
             src = FrameSource(video_path, start_sec=window_start,
@@ -162,6 +171,7 @@ class Analyzer:
         disp = score_display(summary)
 
         result = {
+            "engine_version": "2.1.0",
             "wod": {
                 "id": wod.get("wod_id"),
                 "name_fa": wod.get("name_fa"),
@@ -174,6 +184,7 @@ class Analyzer:
                 "description_en": wod.get("description_en"),
                 "score_fa": wod.get("score_fa"),
                 "score_en": wod.get("score_en"),
+                "rep_timeline": summary["rep_timeline"],
             },
             "start_detection": {
                 "method": start_method,
@@ -201,7 +212,8 @@ class Analyzer:
         }
 
         # ---------------- 7. annotated review video ---------------- #
-        if not mock and ANNOTATE_REVIEW_VIDEO and self.job.get("video_path"):
+        annotate = ANNOTATE_REVIEW_VIDEO and self.meta.get("annotate", True)
+        if not mock and annotate and self.job.get("video_path"):
             try:
                 self.progress("review_video", 98)
                 from reporting.video_annotator import annotate_video
@@ -225,6 +237,7 @@ class Analyzer:
 
         preroll: list[PoseFrame] = []
         ground_samples: list[tuple[float, float]] = []
+        height_samples: list[float] = []
         bar_candidates: list[float] = []
         calibrated = False
         processed = 0
@@ -269,6 +282,7 @@ class Analyzer:
 
             # ---- online scene updates ---- #
             online_ground_update(scene, pf, ground_samples)
+            online_height_update(scene, pf, height_samples)
             self._track_bar(scene, pf, bar_candidates)
 
             # ---- FSMs ---- #
@@ -296,6 +310,8 @@ class Analyzer:
             tail = fsm.collect()
             if tail:
                 sequencer.feed(tail, last_t)
+        # emit attempts still held by the sequencer (unconfirmed switches)
+        sequencer.flush(last_t)
 
     # ------------------------------------------------------------------ #
     def _wod_blocks_for_mock(self) -> list[dict]:
@@ -351,6 +367,37 @@ class _MockDetector:
         f = self.frames[min(frame_index, len(self.frames) - 1)]
         return PoseFrame(points=dict(f.points), frame_index=frame_index,
                          timestamp=timestamp, person_detected=f.person_detected)
+
+
+class _ReplayDetector:
+    """PoseDetector-shaped adapter over a CACHED pose stream (extracted once
+    from a real video) — enables fast judging-logic iteration + regression
+    tests without re-running pose detection."""
+
+    def __init__(self, frames: list[PoseFrame]):
+        self.frames = frames
+
+    def process_frame(self, bgr, frame_index: int, timestamp: float) -> PoseFrame:
+        if frame_index < len(self.frames):
+            f = self.frames[frame_index]
+            return PoseFrame(points=dict(f.points), frame_index=frame_index,
+                             timestamp=timestamp,
+                             person_detected=f.person_detected)
+        return PoseFrame(frame_index=frame_index, timestamp=timestamp)
+
+    def close(self) -> None:  # interface parity with PoseDetector
+        pass
+
+
+class _ReplayIterator:
+    """FrameSource-shaped adapter over a cached pose stream."""
+
+    def __init__(self, frames: list[PoseFrame]):
+        self._frames = frames
+
+    def frames(self):
+        for i, f in enumerate(self._frames):
+            yield i, f.timestamp, None
 
 
 class _MockFrameIterator:
