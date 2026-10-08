@@ -33,8 +33,44 @@ from config.settings import (
     UPLOADS_DIR,
 )
 from jobs.store import JobStore
+from utils.gl_compat import ensure_gl, mediapipe_bindings_ok
+
+# GL self-heal BEFORE anything can dlopen MediaPipe's C bindings: loads the
+# git-vendored EGL/GLES copies when the process wasn't spawned with the
+# supervisor's LD_LIBRARY_PATH (manual restart, systemd, …). Without this,
+# `import mediapipe` succeeds but every analysis dies on libEGL.so.1.
+_GL_OK, _GL_DETAIL = ensure_gl()
 
 app = FastAPI(title="CrossFit Judge V2 Engine", version="2.0.0")
+
+
+class _NoStoreCache:
+    """Pure-ASGI middleware: Cache-Control: no-store on EVERY response.
+
+    Browsers may cache POST responses (init/chunk/complete) that lack explicit
+    cache headers; a stale cached answer replayed against a recycled tunnel
+    produces bizarre client states. Zero overhead, zero streaming interference
+    (only the http.response.start frame is touched)."""
+
+    def __init__(self, app_asgi):
+        self._app = app_asgi
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self._app(scope, receive, send)
+            return
+
+        async def send_no_store(message):
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers") or [])
+                headers.append((b"cache-control", b"no-store"))
+                message["headers"] = headers
+            await send(message)
+
+        await self._app(scope, receive, send_no_store)
+
+
+app.add_middleware(_NoStoreCache)
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"],
     allow_headers=["*"],
@@ -62,13 +98,20 @@ def health():
         import mediapipe  # noqa: F401
     except Exception as e:  # noqa: BLE001
         deps_ok, deps_error = False, str(e)
+    # DEEP check — the real failure mode: mediapipe imports fine but its C
+    # bindings dlopen() crashes on a missing libEGL.so.1. This also warms
+    # the library (load_raw_library caches module-global), so a green health
+    # report GUARANTEES the next analysis will get past PoseDetector init.
+    bindings_ok, bindings_error = mediapipe_bindings_ok()
     return {
         "ok": True,
         "service": "crossfit-judge",
-        "version": "2.4.0",
+        "version": "2.4.1",
         "model_present": (MODELS_DIR / MODEL_FILENAME).exists(),
-        "deps_ok": deps_ok,
-        "deps_error": deps_error,
+        "deps_ok": deps_ok and bindings_ok,
+        "deps_error": deps_error or bindings_error or None,
+        "gl_ok": _GL_OK,
+        "gl_detail": _GL_DETAIL,
         "disk_free_mb": round(shutil.disk_usage(str(MODELS_DIR)).free / 1048576),
     }
 

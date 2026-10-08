@@ -88,6 +88,56 @@ class JobStore:
                                   daemon=True)
             th.start()
             self._workers.append(th)
+        self._recover_orphans()
+
+    def _recover_orphans(self) -> None:
+        """Crash recovery at startup — an engine restart (platform reset,
+        crash, deploy) must never leave finished work broken or in-flight
+        work stuck forever:
+          * done + review_video "pending"  → the async review renderer died
+            with the old process → re-kick it now (idempotent: the annotator
+            re-renders from the stored result).
+          * queued/running → the analysis itself was killed mid-run → re-queue
+            the whole analysis (the uploaded video is still on disk).
+        """
+        try:
+            rows = self._db.execute(
+                "SELECT id, status, result_json FROM jobs "
+                "WHERE status IN ('queued', 'running', 'done')").fetchall()
+        except sqlite3.OperationalError:
+            return
+        for job_id, status, result_json in rows:
+            updir = UPLOADS_DIR / job_id
+            has_video = (updir / "original.mp4").exists()
+            if status == "done":
+                try:
+                    result = json.loads(result_json or "{}")
+                except (ValueError, TypeError):
+                    continue
+                if result.get("review_video") != "pending":
+                    continue
+                if not has_video:
+                    self.patch_result(job_id, {
+                        "review_video": False,
+                        "review_video_error": "original video missing"})
+                    continue
+                th = threading.Thread(
+                    target=self._render_review,
+                    name=f"review-recovery-{job_id}",
+                    args=(job_id, str(updir / "original.mp4"),
+                          str(updir / "review.mp4"), result),
+                    daemon=True)
+                th.start()
+            elif has_video:
+                # killed mid-analysis → restart it from scratch
+                self._update(job_id, status="queued", stage="queued",
+                             progress=0.0, error_fa=None, error_en=None,
+                             result_json=None)
+                self._q.put(job_id)
+            else:
+                self.fail(job_id,
+                          "فایل ویدیو یافت نشد (بازیابی پس از راه‌اندازی مجدد)",
+                          "Video file missing (post-restart recovery)")
 
     # ------------------------------------------------------------------ #
     # CRUD

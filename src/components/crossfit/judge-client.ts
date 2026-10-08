@@ -25,7 +25,9 @@ async function json<T>(path: string, init?: RequestInit): Promise<T> {
   // Never hang forever: a request stuck behind a cold-starting engine (or a
   // dead tunnel) must fail fast so callers can retry or show an error.
   const signal = init?.signal ?? AbortSignal.timeout(30_000);
-  const res = await fetch(path, { ...init, signal });
+  // no-store: API responses (esp. POSTs) must NEVER be replayed from the
+  // browser HTTP cache — a stale cached init/complete answer is poison.
+  const res = await fetch(path, { ...init, signal, cache: "no-store" });
   if (!res.ok) {
     let detail = res.statusText;
     try {
@@ -110,6 +112,40 @@ const WARMING_RETRY_MS = 4_000;
 /** True when a response is the engine-warmup 503 (retry patiently). */
 function isWarming503(status: number, body: Record<string, unknown> | undefined): boolean {
   return status === 503 && !!(body && body.warming_up);
+}
+
+/** Honest, actionable error for a dead app route. Preview tunnels get
+ * "recycled" when the platform restarts the sandbox; the old link then
+ * swallows requests forever. The user MUST reopen the app from the chat —
+ * no amount of retrying inside the dead page can ever succeed. */
+const DEAD_LINK_MSG =
+  "Cannot reach the analysis server — this app link has most likely expired " +
+  "(it happens when the platform restarts the server). " +
+  "Close this page completely and reopen the app from the chat. " +
+  "— اتصال به سرور برقرار نشد؛ به احتمال زیاد لینک برنامه منقضی شده است. " +
+  "این صفحه را کاملاً ببندید و برنامه را از داخل گفتگو دوباره باز کنید.";
+
+/** User-cancel + hard-deadline abort signal in one. Raw fetch calls have no
+ * watchdog of their own — without this, a dead-but-accepting route would
+ * hang an init/complete fetch FOREVER (the frozen-upload-bar failure mode). */
+function withDeadline(
+  base: AbortSignal | undefined, ms: number,
+): { signal: AbortSignal; done: () => void } {
+  const ctrl = new AbortController();
+  const timer = setTimeout(
+    () => ctrl.abort(new DOMException("Deadline exceeded", "TimeoutError")), ms);
+  const onAbort = () => ctrl.abort(base?.reason);
+  if (base) {
+    if (base.aborted) ctrl.abort(base.reason);
+    else base.addEventListener("abort", onAbort, { once: true });
+  }
+  return {
+    signal: ctrl.signal,
+    done: () => {
+      clearTimeout(timer);
+      base?.removeEventListener("abort", onAbort);
+    },
+  };
 }
 
 /** Live transfer telemetry reported alongside the percentage. */
@@ -303,6 +339,32 @@ async function uploadChunked(payload: UploadPayload): Promise<{ job_id: string }
   const size = file.size;
   const signal = payload.signal;
 
+  // --- connectivity pre-check: fail FAST and HONESTLY when the app route
+  // itself is dead. A recycled tunnel accepts the connection and swallows
+  // every request forever — without this check the video would "upload" to
+  // 100% into a void and only THEN die with a misleading transport error,
+  // wasting the user's time and data. (12 s deadline, engine-warmup OK.)
+  {
+    const dl = withDeadline(signal, 12_000);
+    try {
+      const r = await fetch("/api/judge/health", { cache: "no-store", signal: dl.signal });
+      let alive = r.ok;
+      if (!alive && r.status === 503) {
+        try {
+          const b = await r.json();
+          alive = isWarming503(r.status, b);   // server up, engine booting
+        } catch { /* not JSON → dead */ }
+      }
+      if (!alive) throw new PermanentUploadError(DEAD_LINK_MSG);
+    } catch (e) {
+      if (e instanceof PermanentUploadError) throw e;
+      if (signal?.aborted) throw e;
+      throw new PermanentUploadError(DEAD_LINK_MSG);
+    } finally {
+      dl.done();
+    }
+  }
+
   // --- speed meter (EMA over recent progress samples) -------------------- //
   const samples: Array<{ t: number; bytes: number }> = [];
   let speedEma = 0;
@@ -351,7 +413,7 @@ async function uploadChunked(payload: UploadPayload): Promise<{ job_id: string }
     const saved = localStorage.getItem(storeKey);
     if (saved) {
       const probe = await fetch(`/api/judge/jobs/${saved}/session`,
-        { signal: AbortSignal.timeout(15_000) });
+        { signal: AbortSignal.timeout(15_000), cache: "no-store" });
       if (probe.ok) {
         const s = await probe.json();
         if (!s.complete && s.registered === false &&
@@ -389,16 +451,25 @@ async function uploadChunked(payload: UploadPayload): Promise<{ job_id: string }
     const deadline = Date.now() + WARMING_BUDGET_MS;
     for (;;) {
       let r: Response;
+      const dl = withDeadline(signal, 60_000);
       try {
-        r = await fetch("/api/judge/jobs/init", { method: "POST", body: form, signal });
+        r = await fetch("/api/judge/jobs/init", {
+          method: "POST", body: form, signal: dl.signal, cache: "no-store",
+        });
       } catch (e) {
         if (signal?.aborted) throw e;
-        // network blip — keep trying inside the budget
+        // network blip / deadline — keep trying inside the budget
         if (Date.now() > deadline)
-          throw new Error("Server is not responding — please check your connection and try again");
+          throw new PermanentUploadError(
+            "The server is not responding — please check your connection and try " +
+            "again. If it keeps failing, close this page and reopen the app from " +
+            "the chat. — سرور پاسخ نمی‌دهد؛ اتصال خود را بررسی کنید. اگر تکرار شد " +
+            "صفحه را ببندید و برنامه را از داخل گفتگو دوباره باز کنید.");
         payload.onStatus?.("warming");
         await sleep(WARMING_RETRY_MS, signal);
         continue;
+      } finally {
+        dl.done();
       }
       if (r.ok) {
         const j = await r.json();
@@ -458,8 +529,10 @@ async function uploadChunked(payload: UploadPayload): Promise<{ job_id: string }
   /** Server-truth probe → refill the piece queue with any holes (bounded). */
   const resyncFromServer = async (): Promise<boolean> => {
     if (++resyncs > MAX_RESYNCS) return false;
+    const dl = withDeadline(signal, 15_000);
     try {
-      const probe = await fetch(`/api/judge/jobs/${jobId}/session`, { signal });
+      const probe = await fetch(`/api/judge/jobs/${jobId}/session`,
+        { signal: dl.signal, cache: "no-store" });
       if (!probe.ok) return probe.status === 404
         ? Boolean(fatal = new PermanentUploadError(
             "Upload session expired — please start the upload again."))
@@ -477,6 +550,8 @@ async function uploadChunked(payload: UploadPayload): Promise<{ job_id: string }
       return true;
     } catch {
       return false;
+    } finally {
+      dl.done();
     }
   };
 
@@ -540,7 +615,10 @@ async function uploadChunked(payload: UploadPayload): Promise<{ job_id: string }
                   fatal = new PermanentUploadError(
                     "The connection to the server is not accepting video data " +
                     "(every attempt stalls). — اتصال به سرور اجازهٔ انتقال ویدیو " +
-                    "نمی‌دهد. Please check your network / try again in a few minutes.");
+                    "نمی‌دهد. Check your network and try again; if it keeps failing, " +
+                    "close this page and reopen the app from the chat — the link may " +
+                    "have expired after a server restart. — اگر تکرار شد، صفحه را " +
+                    "ببندید و برنامه را از داخل گفتگو دوباره باز کنید.");
                   return;
                 }
                 advanced = true;         // re-enter with a smaller chunk
@@ -616,7 +694,10 @@ async function uploadChunked(payload: UploadPayload): Promise<{ job_id: string }
                 fatal = new PermanentUploadError(
                   "The connection to the server is not accepting video data " +
                   "(every attempt stalls). — اتصال به سرور اجازهٔ انتقال ویدیو " +
-                  "نمی‌دهد. Please check your network / try again in a few minutes.");
+                  "نمی‌دهد. Check your network and try again; if it keeps failing, " +
+                  "close this page and reopen the app from the chat — the link may " +
+                  "have expired after a server restart. — اگر تکرار شد، صفحه را " +
+                  "ببندید و برنامه را از داخل گفتگو دوباره باز کنید.");
                 return;
               }
               await resyncFromServer();
@@ -663,9 +744,10 @@ async function uploadChunked(payload: UploadPayload): Promise<{ job_id: string }
     const deadline = Date.now() + WARMING_BUDGET_MS;
     for (;;) {
       let r2: Response;
+      const dl = withDeadline(signal, 30_000);
       try {
         r2 = await fetch(`/api/judge/jobs/${jobId}/complete`, {
-          method: "POST", signal,
+          method: "POST", signal: dl.signal, cache: "no-store",
         });
       } catch (e) {
         if (signal?.aborted) throw e;
@@ -674,6 +756,8 @@ async function uploadChunked(payload: UploadPayload): Promise<{ job_id: string }
             "please check history; the video may need a retry.");
         await sleep(WARMING_RETRY_MS, signal);
         continue;
+      } finally {
+        dl.done();
       }
       if (r2.ok) break;
       let body2: Record<string, unknown> | undefined;
