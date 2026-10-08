@@ -38,7 +38,9 @@ def test_frame_source_cfr_timeline(vfr_mp4):
             assert abs(t - idx / TARGET_FPS) < 1e-6   # CFR by construction
             last_t = t
             n += 1
-        assert 170 <= n <= 185, n      # ~6s × 30fps
+        # fps-agnostic CFR count: ~duration × TARGET_FPS frames (±10%)
+        expect = info.duration_sec * TARGET_FPS
+        assert expect * 0.9 <= n <= expect * 1.1, (n, expect)
 
 
 def test_annotate_video_keeps_audio(vfr_mp4, tmp_path):

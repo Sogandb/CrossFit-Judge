@@ -122,7 +122,7 @@ def test_history(client):
 
 
 # --------------------------------------------------------------------------- #
-# Chunked / resumable upload (byte-offset protocol, multipart + raw)
+# Chunked / resumable upload (SPARSE byte-range protocol, multipart + raw)
 # --------------------------------------------------------------------------- #
 _OCTET = {"content-type": "application/octet-stream"}
 
@@ -136,73 +136,80 @@ def _chunk_multipart(client, job_id, offset, data, total=None):
     return client.post(f"/api/jobs/{job_id}/chunk", data=fields, files=files)
 
 
-def test_chunked_upload_flow(client, tiny_mp4):
-    from config.settings import UPLOADS_DIR
-    data = tiny_mp4.read_bytes()
-    r = client.post("/api/jobs/init", data={
+def _init(client, **over):
+    fields = {
         "filename": "sample.mp4",
-        "total_bytes": str(len(data)),
         "division": "m_18_34_rx",
         "wod_id": "wodx_ladder_wod1",
         "athlete_name": "chunk test",
         "claimed_reps": "10",
         "pose_source": "mock",
         "mock_block_scale": "0.15",
-    })
+    }
+    fields.update(over)
+    return client.post("/api/jobs/init", data=fields)
+
+
+def test_chunked_upload_flow(client, tiny_mp4):
+    """Sparse protocol: out-of-order is ACCEPTED, duplicates are idempotent
+    acks, complete verifies FULL coverage, reassembly is byte-identical."""
+    from config.settings import UPLOADS_DIR
+    data = tiny_mp4.read_bytes()
+    r = _init(client, total_bytes=str(len(data)))
     assert r.status_code == 200, r.text
     init = r.json()
     job_id = init["job_id"]
     assert init["received"] == 0 and init["chunk_size"] > 0
+    assert init.get("sparse") is True
 
-    # gap: chunk that starts beyond received → 409 + server truth
-    r = _chunk_multipart(client, job_id, 100, data[:10])
-    assert r.status_code == 409
-    assert r.json()["received"] == 0
-
-    # mixed variable sizes: quarter → half of the remainder → rest
     q1 = len(data) // 4
-    r = _chunk_multipart(client, job_id, 0, data[:q1], total=len(data))
+    q2 = q1 + (len(data) - q1) // 2
+
+    # OUT-OF-ORDER: the tail chunk FIRST (sparse v2 — parallel streams)
+    r = _chunk_multipart(client, job_id, q2, data[q2:], total=len(data))
     assert r.status_code == 200, r.text
-    assert r.json()["received"] == q1
+    j = r.json()
+    assert j["covered"] == len(data) - q2
+    assert j["accepted"] == len(data) - q2
+    assert j["received"] == 0          # prefix still at zero (hole below)
 
-    # retried duplicate (same offset) → idempotent ack, no extra bytes
-    r = _chunk_multipart(client, job_id, 0, data[:q1], total=len(data))
-    assert r.status_code == 200 and r.json().get("duplicate") is True
-    assert r.json()["received"] == q1
-
-    # overlapping retry (older offset) → still idempotent
-    r = _chunk_multipart(client, job_id, q1 // 2, data[:8])
-    assert r.status_code == 200 and r.json().get("duplicate") is True
-    assert r.json()["received"] == q1
-
-    # premature complete → 400 (missing bytes)
+    # premature complete → 400 (coverage incomplete: [q1..q2) missing)
     r = client.post(f"/api/jobs/{job_id}/complete")
     assert r.status_code == 400
 
-    # resume probe reflects the session state
+    # middle chunk
+    r = _chunk_multipart(client, job_id, q1, data[q1:q2])
+    assert r.status_code == 200, r.text
+    j = r.json()
+    assert j["received"] == 0          # STILL holed at the front
+    assert j["covered"] == len(data) - q1
+
+    # duplicate retry of the same range → idempotent, accepted == 0
+    r = _chunk_multipart(client, job_id, q2, data[q2:], total=len(data))
+    assert r.status_code == 200
+    j = r.json()
+    assert j["accepted"] == 0 and j.get("duplicate") is True
+
+    # resume probe exposes ranges (client refills only the holes)
     r = client.get(f"/api/jobs/{job_id}/session")
     assert r.status_code == 200
     st = r.json()
     assert st["complete"] is False and st["registered"] is False
-    assert st["received"] == q1 and st["total_bytes"] == len(data)
+    assert st["covered"] == len(data) - q1
+    assert st["sparse"] is True
+    assert st["ranges"] == [[q1, len(data)]]
 
-    # second chunk — different size (protocol allows per-request sizes)
-    q2 = q1 + (len(data) - q1) // 2
-    r = _chunk_multipart(client, job_id, q1, data[q1:q2])
+    # first chunk closes the last hole (raw octet-stream shape, like curl)
+    r = client.post(f"/api/jobs/{job_id}/chunk", params={"offset": 0},
+                    content=data[:q1], headers=_OCTET)
     assert r.status_code == 200, r.text
-    assert r.json()["received"] == q2
-
-    # raw octet-stream shape (curl / scripts) also works
-    r = client.post(f"/api/jobs/{job_id}/chunk", params={"offset": q2},
-                    content=data[q2:], headers=_OCTET)
-    assert r.status_code == 200, r.text
-    assert r.json()["received"] == len(data)
+    j = r.json()
+    assert j["received"] == len(data) and j["covered"] == len(data)
 
     r = client.post(f"/api/jobs/{job_id}/complete")
     assert r.status_code == 200, r.text
     assert r.json()["job_id"] == job_id
 
-    # session file removed after completion
     assert not (UPLOADS_DIR / job_id / "session.json").exists()
 
     body = _wait_done(client, job_id)
@@ -212,36 +219,110 @@ def test_chunked_upload_flow(client, tiny_mp4):
     assert (UPLOADS_DIR / job_id / "original.mp4").read_bytes() == data
 
 
-def test_chunked_partial_write_rollback(client, tiny_mp4):
-    """A raw attempt that dies mid-write must not corrupt the stream: the
-    next chunk truncates back to the acknowledged size."""
+def test_chunked_sparse_never_corrupts(client, tiny_mp4):
+    """A buggy retry sending WRONG bytes at an already-covered offset must
+    never corrupt the stored file (only missing sub-intervals are written)."""
     from config.settings import UPLOADS_DIR
     data = tiny_mp4.read_bytes()
-    r = client.post("/api/jobs/init", data={
-        "filename": "sample.mp4", "total_bytes": str(len(data)),
-        "division": "m_18_34_rx", "claimed_reps": "10",
-        "pose_source": "mock", "mock_block_scale": "0.15",
-    })
-    assert r.status_code == 200, r.text
+    r = _init(client, total_bytes=str(len(data)))
     job_id = r.json()["job_id"]
-
     half = len(data) // 2
-    assert _chunk_multipart(client, job_id, 0, data[:half]).status_code == 200
 
-    # simulate a torn raw write: garbage appended beyond `received`
+    assert _chunk_multipart(client, job_id, 0, data[:half]).status_code == 200
+    # garbage "retry" over the covered range
+    r = _chunk_multipart(client, job_id, 0, b"\xde\xad\xbe\xef" * (half // 4))
+    assert r.status_code == 200 and r.json()["accepted"] == 0
+
+    # a torn raw write appended garbage beyond covered ranges → ignored:
+    # the next in-order chunk writes only the missing hole; complete trims
     part = UPLOADS_DIR / job_id / "original.mp4.part"
     with open(part, "ab") as f:
         f.write(b"\xde\xad\xbe\xef" * 100)
-
-    # next chunk at the server-truth offset → truncates the garbage first
     r = client.post(f"/api/jobs/{job_id}/chunk", params={"offset": half},
                     content=data[half:], headers=_OCTET)
     assert r.status_code == 200, r.text
     assert r.json()["received"] == len(data)
-
     r = client.post(f"/api/jobs/{job_id}/complete")
     assert r.status_code == 200, r.text
     assert (UPLOADS_DIR / job_id / "original.mp4").read_bytes() == data
+
+
+def test_five_stream_true_parallel_upload(client, tiny_mp4):
+    """5 browser streams hit the chunk endpoint SIMULTANEOUSLY (one piece
+    each, then round after round of chunks). Guards the
+    buffering-outside-the-session-lock design: under real concurrency the
+    endpoint must neither deadlock, drop bytes, nor corrupt the range
+    bookkeeping — and the reassembled file must be byte-identical."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from config.settings import UPLOADS_DIR
+
+    rng = __import__("random").Random(20261008)
+    data = bytearray(rng.randbytes(3 * 1024 * 1024))   # 3 MB, incompressible
+    data[0:8] = b"\x00\x00\x00\x18ftyp"             # plausible mp4 magic
+    data = bytes(data)
+
+    r = _init(client, filename="parallel.mp4", total_bytes=str(len(data)))
+    assert r.status_code == 200, r.text
+    job_id = r.json()["job_id"]
+
+    n = 5
+    piece = (len(data) + n - 1) // n
+    pieces = [(i * piece, min((i + 1) * piece, len(data)))
+              for i in range(n) if i * piece < len(data)]
+
+    def stream(bounds):
+        start, end = bounds
+        off = start
+        while off < end:
+            want = min(256 * 1024, end - off)   # small chunks → many requests
+            rr = _chunk_multipart(client, job_id, off,
+                                  data[off:off + want], total=len(data))
+            assert rr.status_code == 200, rr.text
+            accepted = rr.json()["accepted"]
+            assert accepted == want, (off, accepted, want)
+            off += accepted
+        return True
+
+    with ThreadPoolExecutor(max_workers=n) as ex:
+        assert all(ex.map(stream, pieces))
+
+    r = client.get(f"/api/jobs/{job_id}/session")
+    st = r.json()
+    assert st["covered"] == len(data) and st["received"] == len(data)
+    assert st["ranges"] == [[0, len(data)]]
+
+    r = client.post(f"/api/jobs/{job_id}/complete")
+    assert r.status_code == 200, r.text
+    stored = (UPLOADS_DIR / job_id / "original.mp4").read_bytes()
+    assert stored == data, "parallel reassembly must be byte-identical"
+
+
+def test_retry_failed_job_without_reupload(client, tiny_mp4):
+    """retry re-queues a FAILED job whose video is still on the server —
+    the exact recovery path for transient analysis failures (e.g. a wiped
+    venv). No re-upload; 409 when the job is not failed."""
+    r = _init(client, claimed_reps="5")
+    job_id = r.json()["job_id"]
+    data = tiny_mp4.read_bytes()
+    assert _chunk_multipart(client, job_id, 0, data, total=len(data)).status_code == 200
+    assert client.post(f"/api/jobs/{job_id}/complete").status_code == 200
+    _wait_done(client, job_id)
+
+    # a DONE job cannot be retried
+    r = client.post(f"/api/jobs/{job_id}/retry")
+    assert r.status_code == 409
+
+    # force-fail the job row, then retry → re-queued → done again
+    import main as main_mod
+    main_mod.store.fail(job_id, "خطای تست", "test failure")
+    r = client.post(f"/api/jobs/{job_id}/retry")
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "queued"
+    body = _wait_done(client, job_id)
+    assert body["job"]["status"] == "done"
+    # unknown job → 404
+    assert client.post("/api/jobs/does-not-exist/retry").status_code == 404
 
 
 def test_chunked_protocol_validation(client):

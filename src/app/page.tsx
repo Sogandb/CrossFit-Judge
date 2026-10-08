@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, RotateCcw, XCircle } from "lucide-react";
+import { CheckCircle2, RotateCcw, UploadCloud, XCircle } from "lucide-react";
 import { Header } from "@/components/crossfit/Header";
 import { Footer } from "@/components/crossfit/Footer";
 import { WodCard } from "@/components/crossfit/WodCard";
@@ -11,7 +11,7 @@ import { StatusPanel } from "@/components/crossfit/StatusPanel";
 import { ResultsView } from "@/components/crossfit/ResultsView";
 import { HistoryList } from "@/components/crossfit/HistoryList";
 import {
-  fetchDivisions, fetchJob, fetchJobs, uploadJob,
+  fetchDivisions, fetchJob, fetchJobs, retryJob, uploadJob,
 } from "@/components/crossfit/judge-client";
 import type {
   AnalysisResult, DivisionsResponse, JobInfo,
@@ -169,6 +169,23 @@ export default function Home() {
     setUploadPct(0);
   }, [stopPolling]);
 
+  /** Retry a failed analysis WITHOUT re-uploading — the video is already
+   *  on the server; only the engine re-runs (transient failures such as
+   *  engine restarts / environment hiccups are exactly this case). */
+  const handleRetry = useCallback(async () => {
+    if (!job) return;
+    const jobId = job.id;
+    try {
+      await retryJob(jobId);
+      setError(null);
+      setResult(null);
+      setPhase("processing");
+      poll(jobId);
+    } catch {
+      toast({ title: t("fail.retryUnavailable"), variant: "destructive" });
+    }
+  }, [job, poll, t]);
+
   const openJob = useCallback(async (id: string) => {
     try {
       const body = await fetchJob(id);
@@ -316,10 +333,16 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
-                <Button onClick={handleReset} variant="outline" className="gap-2 w-full">
-                  <RotateCcw className="h-4 w-4" />
-                  {t("fail.startOver")}
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button onClick={handleRetry} className="gap-2 flex-1">
+                    <RotateCcw className="h-4 w-4" />
+                    {t("fail.retryAnalysis")}
+                  </Button>
+                  <Button onClick={handleReset} variant="outline" className="gap-2 flex-1">
+                    <UploadCloud className="h-4 w-4" />
+                    {t("fail.startOver")}
+                  </Button>
+                </div>
               </div>
             )}
 

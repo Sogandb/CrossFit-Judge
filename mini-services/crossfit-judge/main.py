@@ -55,11 +55,21 @@ def _startup() -> None:
 @app.get("/api/health")
 def health():
     from config.settings import MODELS_DIR, MODEL_FILENAME
+    import shutil
+    deps_ok, deps_error = True, None
+    try:
+        import cv2  # noqa: F401  (mediapipe's opencv)
+        import mediapipe  # noqa: F401
+    except Exception as e:  # noqa: BLE001
+        deps_ok, deps_error = False, str(e)
     return {
         "ok": True,
         "service": "crossfit-judge",
-        "version": "2.0.0",
+        "version": "2.2.0",
         "model_present": (MODELS_DIR / MODEL_FILENAME).exists(),
+        "deps_ok": deps_ok,
+        "deps_error": deps_error,
+        "disk_free_mb": round(shutil.disk_usage(str(MODELS_DIR)).free / 1048576),
     }
 
 
@@ -319,6 +329,57 @@ def _sweep_stale_sessions() -> None:
             continue
 
 
+# ---------------------------------------------------------------------- #
+# Sparse byte-range bookkeeping (parallel-safe uploads)
+# ---------------------------------------------------------------------- #
+MAX_CHUNK_BYTES = 32 * 1024 * 1024   # server-side cap on one chunk body
+
+
+def _ranges_normalize(ranges: list) -> list:
+    """Sort + merge [[s,e), ...] into a canonical non-overlapping list."""
+    out: list = []
+    for s, e in sorted((int(a), int(b)) for a, b in ranges if int(b) > int(a)):
+        if out and s <= out[-1][1]:
+            out[-1][1] = max(out[-1][1], e)
+        else:
+            out.append([s, e])
+    return out
+
+
+def _ranges_covered(ranges: list) -> int:
+    return sum(e - s for s, e in ranges)
+
+
+def _ranges_prefix(ranges: list) -> int:
+    """Contiguous covered prefix measured from byte 0 (the sequential
+    `received` equivalent — used for resume probes and compat responses)."""
+    prefix = 0
+    for s, e in _ranges_normalize(ranges):
+        if s > prefix:
+            break
+        prefix = max(prefix, e)
+    return prefix
+
+
+def _ranges_missing_within(ranges: list, start: int, end: int) -> list:
+    """Holes in [start, end) not covered by `ranges` (to write or fetch)."""
+    holes: list = []
+    cur = start
+    for s, e in _ranges_normalize(ranges):
+        if e <= cur:
+            continue
+        if s >= end:
+            break
+        if s > cur:
+            holes.append([cur, min(s, end)])
+        cur = max(cur, e)
+        if cur >= end:
+            break
+    if cur < end:
+        holes.append([cur, end])
+    return holes
+
+
 @app.post("/api/jobs/init")
 async def init_upload(
     filename: str = Form(...),
@@ -359,10 +420,11 @@ async def init_upload(
         "filename": filename,
         "total_bytes": total_bytes,
         "received": 0,
+        "ranges": [],          # sparse v2: covered byte ranges
         "meta": meta,
     })
     return {"job_id": job_id, "chunk_size": CHUNK_SUGGEST_BYTES,
-            "received": 0}
+            "received": 0, "sparse": True}
 
 
 async def _drain_body(request: Request) -> None:
@@ -378,24 +440,23 @@ async def _drain_body(request: Request) -> None:
 @app.post("/api/jobs/{job_id}/chunk")
 async def upload_chunk(job_id: str, request: Request,
                        offset: Optional[int] = None):
-    """Append one chunk at a byte offset.
+    """Write one chunk at a byte offset (SPARSE — any order, parallel-safe).
 
     Wire shapes (auto-detected from the content type):
-      • multipart/form-data — form field "offset" (int) + file part "blob";
+      * multipart/form-data — form field "offset" (int) + file part "blob";
         optional "total_bytes" field (session sanity check).
-      • raw body — query parameter ?offset=N.
+      * raw body — query parameter ?offset=N.
 
     Responses:
-      200 {job_id, received, duplicate}  — appended (or idempotent re-ack
-          when the bytes are already stored: offset < received)
-      409 {detail, received}             — gap detected (offset > received);
-          the client resyncs to the server's authoritative byte count
-      413/415/422/404                    — permanent errors (no retry)
+      200 {job_id, received, covered, accepted, duplicate}
+          — bytes stored at their offset (out-of-order OK); `received` is
+            the contiguous prefix, `covered` the total stored anywhere,
+            `accepted` the NEW bytes this request contributed (0 = duplicate)
+      413/415/422/404 — permanent errors (no retry)
     """
     if store is None:
         raise HTTPException(503, "Service is not ready")
-    sess = _sess_load(job_id)
-    if sess is None:
+    if _sess_load(job_id) is None:
         raise HTTPException(404, "Upload session not found (expired or already finished)")
 
     ctype = (request.headers.get("content-type") or "").lower()
@@ -417,12 +478,10 @@ async def upload_chunk(job_id: str, request: Request,
         if blob.size is not None and blob.size > MAX_CHUNK_BYTES:
             raise HTTPException(413, "Chunk too large")
         total_field = form.get("total_bytes")
-        if total_field is not None:
-            try:
-                if sess.get("total_bytes") is None:
-                    sess["total_bytes"] = int(str(total_field))
-            except (TypeError, ValueError):
-                pass
+        try:
+            total_val = int(str(total_field)) if total_field is not None else None
+        except (TypeError, ValueError):
+            total_val = None
 
         async def _byte_iter():
             while True:
@@ -434,6 +493,7 @@ async def upload_chunk(job_id: str, request: Request,
         off = offset
         if off is None:
             raise HTTPException(422, "Query parameter 'offset' is required for raw chunks")
+        total_val = None
 
         async def _byte_iter():
             async for piece in request.stream():
@@ -442,47 +502,66 @@ async def upload_chunk(job_id: str, request: Request,
     if off < 0:
         raise HTTPException(422, "offset must be >= 0")
 
-    received = sess["received"]
-
-    # ---- idempotent re-ack: bytes already stored ------------------------ #
-    if off < received:
-        if not is_multipart:
-            await _drain_body(request)
-        return {"job_id": job_id, "received": received, "duplicate": True}
-
-    # ---- gap: client is ahead of the server ----------------------------- #
-    if off > received:
-        if not is_multipart:
-            await _drain_body(request)
-        return JSONResponse(status_code=409, content={
-            "detail": "Byte gap: this chunk starts beyond the received size",
-            "received": received})
-
-    # ---- append at off == received --------------------------------------- #
     part = _sess_dir(job_id) / _PART_NAME
-    written = 0
-    limit_hit = False
+
+    # ---- buffer the chunk OUTSIDE the session lock --------------------- #
+    # Buffering involves awaits; doing that while holding a threading.Lock
+    # would freeze the whole asyncio event loop whenever another parallel
+    # stream arrives — with 5 concurrent streams that is a real
+    # stall/deadlock hazard, so the body is fully materialized BEFORE the
+    # lock is taken.
+    buf = bytearray()
+    async for data in _byte_iter():
+        buf += data
+        if len(buf) > MAX_CHUNK_BYTES:
+            raise HTTPException(413, "Chunk too large")
+    written = len(buf)
+    if off + written > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            413, f"File exceeds the maximum allowed size "
+                 f"({MAX_UPLOAD_BYTES // (1024**3)} GB cap)")
+
     with _sess_lock(job_id):
-        # Rewind any partial write left by a failed attempt → retries are
-        # byte-identical (idempotent at the file level).
-        with open(part, "r+b" if part.exists() else "wb") as f:
-            f.truncate(received)
-            f.seek(received)
-            async for data in _byte_iter():
-                written += len(data)
-                if received + written > MAX_UPLOAD_BYTES:
-                    limit_hit = True
-                    break
-                f.write(data)
-        if limit_hit:
-            with open(part, "r+b") as f:
-                f.truncate(received)
+        sess = _sess_load(job_id)
+        if sess is None:
+            raise HTTPException(404, "Upload session not found")
+        # a late total_bytes field is still authoritative
+        if total_val is not None and sess.get("total_bytes") is None:
+            sess["total_bytes"] = total_val
+        total = sess.get("total_bytes")
+        # migrate legacy sequential sessions (received → range)
+        ranges = _ranges_normalize(
+            sess.get("ranges") or [[0, sess.get("received") or 0]])
+        if total is not None and off + written > int(total):
             raise HTTPException(
-                413, f"File exceeds the maximum allowed size "
-                      f"({MAX_UPLOAD_BYTES // (1024**3)} GB)")
-        _sess_save(job_id, {**sess, "received": received + written})
-    return {"job_id": job_id, "received": received + written,
-            "duplicate": False}
+                422, "Chunk exceeds the announced file size (total_bytes)")
+
+        already = _ranges_covered(ranges)
+        merged = (_ranges_normalize(ranges + [[off, off + written]])
+                  if written else ranges)
+        covered = _ranges_covered(merged)
+        accepted = max(0, covered - already)
+
+        # ---- write ONLY the not-yet-covered sub-intervals -------------- #
+        # A late/buggy retry can never corrupt already-stored bytes: fully
+        # covered chunks are pure idempotent acks; partially covered ones
+        # write just the holes.
+        if written and accepted > 0:
+            holes = _ranges_missing_within(ranges, off, off + written)
+            with open(part, "r+b" if part.exists() else "wb") as f:
+                for gs, ge in holes:
+                    f.seek(gs)
+                    f.write(buf[gs - off: ge - off])
+
+        _sess_save(job_id, {**sess,
+                            "ranges": merged,
+                            "received": _ranges_prefix(merged)})
+
+    return {"job_id": job_id,
+            "received": _ranges_prefix(merged),
+            "covered": covered,
+            "accepted": accepted,
+            "duplicate": accepted == 0 and written > 0}
 
 
 @app.get("/api/jobs/{job_id}/session")
@@ -493,9 +572,14 @@ def upload_session_state(job_id: str):
         if job is not None:
             return {"job_id": job_id, "complete": True, "registered": True}
         raise HTTPException(404, "Upload session not found")
+    ranges = _ranges_normalize(
+        sess.get("ranges") or [[0, sess.get("received") or 0]])
     return {"job_id": job_id, "complete": False, "registered": False,
-            "received": sess["received"],
-            "total_bytes": sess.get("total_bytes")}
+            "received": _ranges_prefix(ranges),
+            "covered": _ranges_covered(ranges),
+            "ranges": ranges,
+            "total_bytes": sess.get("total_bytes"),
+            "sparse": True}
 
 
 @app.post("/api/jobs/{job_id}/complete")
@@ -506,18 +590,23 @@ def complete_upload(job_id: str):
     if sess is None:
         raise HTTPException(404, "Upload session not found (expired or already finished)")
     total = sess.get("total_bytes")
-    if total is not None and sess["received"] != total:
+    ranges = _ranges_normalize(
+        sess.get("ranges") or [[0, sess.get("received") or 0]])
+    covered = _ranges_covered(ranges)
+    if total is not None and covered != int(total):
+        missing = _ranges_missing_within(ranges, 0, int(total))
         raise HTTPException(
-            400, f"Upload incomplete: received {sess['received']} of {total} bytes")
+            400, f"Upload incomplete: {covered} of {total} bytes covered "
+                 f"(missing {sum(e - s for s, e in missing)} bytes)")
     updir = _sess_dir(job_id)
     part = updir / _PART_NAME
     if not part.exists() or part.stat().st_size == 0:
         raise HTTPException(400, "No data uploaded for this session")
     # A raw-mode attempt that died mid-write can leave the part file longer
-    # than the acknowledged size — trim to the authoritative byte count.
-    if part.stat().st_size != sess["received"]:
+    # than the authoritative size — trim to the exact file size.
+    if total is not None and part.stat().st_size != int(total):
         with open(part, "r+b") as f:
-            f.truncate(sess["received"])
+            f.truncate(int(total))
     dst = updir / "original.mp4"
     part.rename(dst)
     (updir / _SESSION_NAME).unlink(missing_ok=True)
@@ -549,6 +638,21 @@ def job_status(job_id: str):
     if job["status"] == "done":
         result = store.get_result(job_id)
     return {"job": job, "result": result}
+
+
+@app.post("/api/jobs/{job_id}/retry")
+def job_retry(job_id: str):
+    """Re-run analysis on the already-uploaded video — no re-upload needed
+    after transient failures (engine restarts, environment hiccups)."""
+    if store is None:
+        raise HTTPException(503, "Service is not ready")
+    if store.get(job_id) is None:
+        raise HTTPException(404, "Analysis not found")
+    if not store.retry(job_id):
+        raise HTTPException(
+            409, "Only failed analyses with the video still on the server "
+                 "can be retried")
+    return {"job_id": job_id, "status": "queued"}
 
 
 @app.get("/api/jobs/{job_id}/result")

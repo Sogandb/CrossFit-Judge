@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ClipboardCheck, ShieldAlert, Download, Flag,
+  ClipboardCheck, ShieldAlert, Download, Flag, Video,
 } from "lucide-react";
 import type { AnalysisResult, AnalysisEvent } from "./types";
 import { ScoreCard } from "./ScoreCard";
@@ -10,6 +10,7 @@ import { StatsGrid } from "./StatsGrid";
 import { BlocksTable } from "./BlocksTable";
 import { RepTable } from "./RepTable";
 import { AnnotatedVideoPlayer } from "./AnnotatedVideoPlayer";
+import { fetchResult } from "./judge-client";
 import { MOVEMENT_LABELS, useLang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,30 @@ export function ResultsView({ jobId, createdAt, athleteName, result }: Props) {
   const { t, n, clock, dateTime, lang } = useLang();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [selectedEvent, setSelectedEvent] = useState<number | null>(null);
+
+  // ---- async review video: poll "pending" → ready, then swap in ------- //
+  // The judging result is FINAL the moment this view renders; only the
+  // annotated video renders in the background. Poll every 8 s until the
+  // store patches review_video to true/false.
+  const [review, setReview] = useState<boolean | "pending">(result.review_video);
+  const resultReview = result.review_video;
+  useEffect(() => {
+    // sync from a NEW result document (e.g. retry or history re-open) in a
+    // microtask — keeps the render that created this state pure.
+    const id = setTimeout(() => setReview(resultReview), 0);
+    return () => clearTimeout(id);
+  }, [resultReview]);
+  useEffect(() => {
+    if (review !== "pending") return;
+    const id = setInterval(() => {
+      fetchResult(jobId)
+        .then((r) => {
+          if (r.review_video !== "pending") setReview(r.review_video);
+        })
+        .catch(() => undefined); // transient poll failures are fine
+    }, 8000);
+    return () => clearInterval(id);
+  }, [review, jobId]);
 
   const events = useMemo(
     () => [...result.events].sort((a, b) => a.t_start - b.t_start),
@@ -141,8 +166,21 @@ export function ResultsView({ jobId, createdAt, athleteName, result }: Props) {
 
       {/* review video + rep table (v1 two-column grid) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-        {result.review_video ? (
+        {review === true ? (
           <AnnotatedVideoPlayer jobId={jobId} videoRef={videoRef} />
+        ) : review === "pending" ? (
+          <div className="rounded-xl border border-edge bg-panel-2/50 aspect-video flex flex-col items-center justify-center gap-3 text-center px-6">
+            <div className="h-10 w-10 rounded-full border-2 border-edge border-t-brand-fg animate-spin" />
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-ink flex items-center gap-2 justify-center">
+                <Video className="h-4 w-4 text-ink-3" />
+                {t("res.reviewPending")}
+              </p>
+              <p className="text-xs text-ink-3 leading-relaxed">
+                {t("res.reviewPendingHint")}
+              </p>
+            </div>
+          </div>
         ) : (
           <div className="hidden lg:block" />
         )}

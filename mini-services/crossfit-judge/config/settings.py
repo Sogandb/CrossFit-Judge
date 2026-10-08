@@ -31,7 +31,10 @@ WORKER_CONCURRENCY = int(os.environ.get("JUDGE_WORKERS", "2"))  # bounded pool (
 # --------------------------------------------------------------------------- #
 # Video ingest gates
 # --------------------------------------------------------------------------- #
-TARGET_FPS = 30.0            # analysis frame rate (CFR, fixes v1 VFR drift)
+TARGET_FPS = 15.0            # analysis frame rate (CFR, fixes v1 VFR drift).
+                              # 15 fps halves the pose-inference budget; all
+                              # movement thresholds are TIME-based (ctx.t), so
+                              # judging behavior is fps-agnostic by design.
 MAX_ANALYSIS_WIDTH = 1280    # downscale for pose estimation speed
 MAX_VIDEO_DURATION_SEC = 900  # 15 minutes — hard gate per Wodx requirement
 MIN_VIDEO_DURATION_SEC = 10   # shorter videos are almost certainly wrong uploads

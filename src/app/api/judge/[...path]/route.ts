@@ -18,6 +18,16 @@ const BACKEND_PORT = 8001;
 
 export const maxDuration = 3600; // long enough for large video uploads
 
+/**
+ * Liveness cache — chunked uploads fire MANY small requests (adaptive
+ * chunking); running a health-check + potential dep-verification per
+ * request adds avoidable latency to every chunk. A recent-positive check
+ * is trusted for a short TTL, and any backend connection error
+ * invalidates it immediately.
+ */
+let lastAliveAt = 0;
+const ALIVE_TTL_MS = 15_000;
+
 async function proxy(
   req: Request,
   context: { params: Promise<{ path: string[] }> },
@@ -27,12 +37,16 @@ async function proxy(
   const url = new URL(req.url);
   const targetPath = `/api/${pathStr}?${url.searchParams.toString()}`;
 
-  // Ensure the Python server is running before we pipe.
-  try {
-    await ensureServer();
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'Server start failed';
-    return Response.json({ error: msg }, { status: 503 });
+  // Ensure the Python server is running before we pipe (TTL-cached).
+  if (Date.now() - lastAliveAt > ALIVE_TTL_MS) {
+    try {
+      await ensureServer();
+      lastAliveAt = Date.now();
+    } catch (e: unknown) {
+      lastAliveAt = 0;
+      const msg = e instanceof Error ? e.message : 'Server start failed';
+      return Response.json({ error: msg }, { status: 503 });
+    }
   }
 
   // Convert the web ReadableStream to a Node readable stream for piping.
@@ -84,6 +98,7 @@ async function proxy(
     );
 
     proxyReq.on('error', (err) => {
+      lastAliveAt = 0; // backend unreachable → re-ensure on the next request
       resolve(
         Response.json(
           { error: `Proxy error: ${err.message}` },

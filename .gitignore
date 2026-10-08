@@ -7,7 +7,9 @@ build/
 
 # python engine
 mini-services/crossfit-judge/venv/
-mini-services/crossfit-judge/data/models/*.task
+# vendored runtime assets (pose model + GLVND libs) are TRACKED so a
+# sandbox reset that git-restores the repo brings them back for free.
+!mini-services/crossfit-judge/data/models/pose_landmarker_full.task
 mini-services/crossfit-judge/data/uploads/
 mini-services/crossfit-judge/data/*.db*
 mini-services/crossfit-judge/**/__pycache__/

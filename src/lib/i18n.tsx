@@ -133,6 +133,22 @@ export const DICT: Record<string, Entry> = {
     fa: "اتصال به سرور تحلیل قطع شد — ممکن است پردازش همچنان در جریان باشد. از تحلیل‌های اخیر دوباره بازش کنید.",
   },
   "fail.startOver": { en: "Start Over", fa: "شروع دوباره" },
+  "fail.retryAnalysis": {
+    en: "Retry Analysis (video is already on the server)",
+    fa: "تحلیل دوباره (ویدیو همین حالا روی سرور است — نیاز به آپلود مجدد نیست)",
+  },
+  "fail.retryUnavailable": {
+    en: "Retry is not available for this analysis",
+    fa: "امکان تلاش دوباره برای این تحلیل وجود ندارد",
+  },
+  "res.reviewPending": {
+    en: "Preparing the review video…",
+    fa: "در حال ساخت ویدیوی بازبینی…",
+  },
+  "res.reviewPendingHint": {
+    en: "All scores are final — the annotated video will appear here automatically.",
+    fa: "همه امتیازها نهایی هستند — ویدیوی حاشیه‌نویسی‌شده به‌طور خودکار همین‌جا ظاهر می‌شود.",
+  },
 
   // ---------- results ---------- //
   "res.title": { en: "Judging Results", fa: "نتیجه داوری" },

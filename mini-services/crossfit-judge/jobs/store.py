@@ -170,9 +170,40 @@ class JobStore:
         self._update(job_id, status="done", stage="done", progress=100,
                      result_json=json.dumps(result, ensure_ascii=False))
 
+    def patch_result(self, job_id: str, patch: dict) -> None:
+        """Merge keys into an existing result (used by the async review-video
+        renderer: the result goes out immediately with review_video="pending"
+        and is patched to True/False once background rendering finishes)."""
+        with self._lock:
+            row = self._db.execute(
+                "SELECT result_json FROM jobs WHERE id = ?", (job_id,)).fetchone()
+            if not row or not row[0]:
+                return
+            result = json.loads(row[0])
+            result.update(patch)
+            self._db.execute(
+                "UPDATE jobs SET result_json = ? WHERE id = ?",
+                (json.dumps(result, ensure_ascii=False), job_id))
+            self._db.commit()
+
     def fail(self, job_id: str, error_fa: str, error_en: Optional[str] = None) -> None:
         self._update(job_id, status="failed", stage="failed",
                      error_fa=error_fa, error_en=error_en)
+
+    def retry(self, job_id: str) -> bool:
+        """Re-queue a FAILED job for analysis — the video is already on the
+        server, so a transient failure (e.g. an environment hiccup) never
+        costs the athlete another upload. Returns False when the job cannot
+        be retried (missing, not failed, or video deleted)."""
+        job = self.get(job_id)
+        if job is None or job["status"] != "failed":
+            return False
+        if not (UPLOADS_DIR / job_id / "original.mp4").exists():
+            return False
+        self._update(job_id, status="queued", stage="queued", progress=0.0,
+                     error_fa=None, error_en=None, result_json=None)
+        self._q.put(job_id)
+        return True
 
     # ------------------------------------------------------------------ #
     # Worker
@@ -211,9 +242,30 @@ class JobStore:
         outcome = Analyzer(job_doc, progress).run()
         if outcome.ok:
             self.finish(job_id, outcome.result)
+            # Async review video: the result is already final and visible;
+            # the annotated render happens in the background and patches
+            # review_video: "pending" → True/False when done (the UI polls).
+            if outcome.result.get("review_video") == "pending":
+                th = threading.Thread(
+                    target=self._render_review, name=f"review-{job_id}",
+                    args=(job_id, video_path, review_path,
+                          dict(outcome.result)), daemon=True)
+                th.start()
         else:
             self.fail(job_id, outcome.error_fa or "خطای نامشخص",
                       outcome.error_en or "Unknown error")
+
+    def _render_review(self, job_id: str, video_path: str,
+                       review_path: str, result: dict) -> None:
+        import traceback
+        try:
+            from reporting.video_annotator import annotate_video
+            annotate_video(video_path, review_path, result)
+            self.patch_result(job_id, {"review_video": True})
+        except Exception as e:  # noqa: BLE001 — non-fatal
+            traceback.print_exc()
+            self.patch_result(job_id, {"review_video": False,
+                                       "review_video_error": str(e)})
 
     @staticmethod
     def _load_wod(wod_id: Optional[str]) -> Optional[dict]:

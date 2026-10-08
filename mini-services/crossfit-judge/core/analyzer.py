@@ -212,18 +212,13 @@ class Analyzer:
         }
 
         # ---------------- 7. annotated review video ---------------- #
+        # Rendered ASYNCHRONOUSLY by the store (background thread): the
+        # result below is final immediately — the UI shows the full judging
+        # report right away and swaps the review video in via polling once
+        # the renderer patches review_video "pending" → True.
         annotate = ANNOTATE_REVIEW_VIDEO and self.meta.get("annotate", True)
         if not mock and annotate and self.job.get("video_path"):
-            try:
-                self.progress("review_video", 98)
-                from reporting.video_annotator import annotate_video
-                annotate_video(self.job["video_path"],
-                               self.job["review_path"], result)
-                result["review_video"] = True
-            except Exception as e:  # noqa: BLE001 — non-fatal
-                traceback.print_exc()
-                result["review_video"] = False
-                result["review_video_error"] = str(e)
+            result["review_video"] = "pending"
         else:
             result["review_video"] = False
 

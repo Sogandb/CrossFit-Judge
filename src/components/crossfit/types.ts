@@ -157,6 +157,8 @@ export interface AnalysisResult {
   events: AnalysisEvent[];
   sequencer_flags: { t: number; code: string; reason_fa: string; reason_en: string }[];
   warnings: StructuredWarning[];
-  review_video: boolean;
+  /** true = review video ready; false = unavailable; "pending" = rendering
+   *  in the background (results are final already — UI polls for the swap). */
+  review_video: boolean | "pending";
   analysis_window: { start_sec: number; end_sec: number | null };
 }
