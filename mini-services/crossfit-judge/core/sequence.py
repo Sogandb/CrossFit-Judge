@@ -1,26 +1,45 @@
 """
 WOD orchestrator — the Runtime Interpreter of the agreed 3-layer design.
 
-The WOD is defined as an ORDERED list of blocks (e.g. the Wodx ladder:
-18 thruster → 18 bar-facing burpee → 15 thruster → 15 burpee → …). The
-sequencer OWNS the "which movement is expected right now?" knowledge:
+STRICT REP-RANGE STATE MACHINE (user spec, v2.4):
 
-  * `rep_timeline` maps every overall rep number to its block/movement
-    (reps 1-18 → thruster, 19-36 → burpee, 37-51 → thruster, …) so both
-    the engine and the UI can state exactly what the athlete should be
-    doing at any point in the workout.
-  * Reps are credited against the CURRENT block only. A movement switch is
-    confirmed once the athlete verifiably starts the next prescribed
-    movement (credits, or a sustained stream of its attempts) — then the
-    sequencer jumps to the next block OF THAT MOVEMENT, flags any skipped
-    block as SEQ_BLOCK_INCOMPLETE (review) and continues tracking.
-  * Attempts of a different movement while a block is open are HELD while
-    the switch is being confirmed, then attributed to the new block (or
-    logged as out-of-order if the switch never confirms).
-  * Excess reps beyond a block's prescription do not score (SEQ_EXCESS_REPS).
-  * Attempts ending after t_start + time_cap are logged but NOT scored.
-  * Workout completion: all blocks filled → finished, finish time = last
-    scored rep end − t_start.
+The WOD is a fixed ladder of blocks. For the Wodx ladder WOD-1:
+
+    Round 1 (18+18):  Thruster 1-18   | Burpee 19-36
+    Round 2 (15+15):  Thruster 37-51  | Burpee 52-66
+    Round 3 (12+12):  Thruster 67-78  | Burpee 79-90
+    Round 4 ( 9+ 9):  Thruster 91-99  | Burpee 100-108
+    Round 5 ( 6+ 6):  Thruster 109-114| Burpee 115-120
+    Round 6 ( 3+ 3):  Thruster 121-123| Burpee 124-126
+
+Rules the sequencer implements EXACTLY:
+
+  * The current block defines the EXPECTED movement and its rep slots.
+  * EVERY attempt of the expected movement consumes one rep slot — whether
+    it is judged REP (credited) or NO_REP (fault with reason + confidence).
+    Rep quality NEVER blocks progression: a block that has consumed all its
+    slots is COMPLETE and the sequencer switches to the next block at the
+    very next rep number.
+  * The overall rep number (1..126) is anchored to the WOD prescription:
+    the burpee block always starts at rep 19, the second thruster block at
+    37, and so on — regardless of no-reps along the way.
+  * Each consumed attempt is judged independently: standard-compliant →
+    credited (scored), or faulty → no-rep with a reason and a decision
+    confidence percentage.
+  * Attempts of a DIFFERENT movement do NOT consume slots:
+      - sporadic (isolated cross-detections / order noise) → logged as
+        movement-mismatch, not scored;
+      - a sustained stream of another prescribed movement while the
+        current block has gone quiet → the FSM has under-detected the
+        current block and the athlete has moved on → REALIGN to the
+        matching block (forward, or backward to the earliest incomplete
+        one), flag skipped blocks SEQ_BLOCK_INCOMPLETE (review), and
+        continue counting from that block's anchored rep number.
+  * Attempts ending after t_start + time_cap are logged but NOT scored
+    and do not consume slots (the workout is over).
+  * Excess attempts once every block is complete → logged, not scored.
+  * Workout completion: all blocks' slots consumed → finished; finish
+    time = end of the last consumed attempt − t_start.
 """
 from __future__ import annotations
 
@@ -36,7 +55,7 @@ from movements.reasons import reason_category
 class ScoredEvent:
     attempt: Attempt
     block_idx: Optional[int]
-    rep_no: Optional[int]        # within-block credited rep number
+    rep_no: Optional[int]        # OVERALL rep number (1..126) for slot-consuming attempts
     scored: bool                 # counted toward the score
     post_cap: bool = False
     notes: list[str] = field(default_factory=list)
@@ -94,28 +113,48 @@ def _category(code):
 @dataclass
 class BlockState:
     movement: str
-    reps: int
-    credited: int = 0
-    complete: bool = False
+    reps: int                    # prescribed rep SLOTS in this block
+    attempts: int = 0            # slots consumed (reps + no-reps)
+    credited: int = 0            # of which judged good reps
+    complete: bool = False       # all slots consumed
     excess_flagged: bool = False
-    rep_start: int = 1   # overall rep number this block starts at
-    rep_end: int = 0     # overall rep number this block ends at
+    rep_start: int = 1           # overall rep number this block starts at
+    rep_end: int = 0             # overall rep number this block ends at
+
+    @property
+    def no_reps(self) -> int:
+        return self.attempts - self.credited
+
+    @property
+    def partial(self) -> bool:
+        return 0 < self.attempts < self.reps
 
     def to_dict(self, idx: int, label_fa: str, label_en: str = "") -> dict:
+        if self.complete:
+            status_fa = "کامل" if self.credited >= self.reps else \
+                f"کامل ({self.credited}/{self.reps} تأییدشده)"
+            status_en = "Complete" if self.credited >= self.reps else \
+                f"Complete ({self.credited}/{self.reps} credited)"
+        elif self.partial:
+            status_fa = "ناقص"
+            status_en = "Partial"
+        else:
+            status_fa = "شروع نشده"
+            status_en = "Not started"
         return {
             "idx": idx,
             "movement": self.movement,
             "movement_fa": label_fa,
             "movement_en": label_en or self.movement,
             "reps": self.reps,
+            "attempts": self.attempts,
             "credited": self.credited,
+            "no_reps": self.no_reps,
             "complete": self.complete,
             "rep_start": self.rep_start,
             "rep_end": self.rep_end,
-            "status_fa": ("کامل" if self.complete else
-                          ("ناقص" if self.credited > 0 else "شروع نشده")),
-            "status_en": ("Complete" if self.complete else
-                          ("Partial" if self.credited > 0 else "Not started")),
+            "status_fa": status_fa,
+            "status_en": status_en,
         }
 
 
@@ -140,8 +179,8 @@ class WodSequencer:
         self.flags: list[dict] = []
         self.finished = False
         self.finish_time: Optional[float] = None
-        self.last_credit_t: dict[str, float] = {}
-        self.pending: dict[str, list[Attempt]] = {}
+        self.last_attempt_t: dict[str, float] = {}   # per-movement last attempt end
+        self.pending: dict[str, list[Attempt]] = {}  # non-expected movement attempts
         self.last_activity_t = t_start
 
     # ------------------------------------------------------------------ #
@@ -176,8 +215,8 @@ class WodSequencer:
     def feed(self, attempts: list[Attempt], t_now: float) -> None:
         for a in attempts:
             self.last_activity_t = max(self.last_activity_t, a.t_end)
-            if a.outcome == REP:
-                self.last_credit_t[a.movement] = a.t_end
+            self.last_attempt_t[a.movement] = max(
+                self.last_attempt_t.get(a.movement, 0.0), a.t_end)
             self._attribute(a, t_now)
 
     def _next_block_of(self, movement: str, from_idx: int) -> Optional[int]:
@@ -186,46 +225,35 @@ class WodSequencer:
                 return j
         return None
 
-    def _maybe_advance(self, movement: str, t_now: float) -> bool:
-        """Transition guard: has the athlete verifiably moved on to this
-        movement? Requires confirmed credits — or a sustained stream of
-        that movement's attempts with the current movement gone quiet.
-
-        The sequencer FOLLOWS THE ATHLETE: it can jump forward to the next
-        prescribed block of the movement, or — when it had drifted ahead —
-        realign BACKWARD to the earliest incomplete block of that movement
-        (flagged for review). Judging never goes blind: every movement's
-        FSM keeps running; only attribution changes."""
-        cur = self.blocks[self.block_idx]
-        if movement == cur.movement:
-            return False
+    # ------------------------------------------------------------------ #
+    # Realignment — RECOVERY ONLY (the primary mechanism is strict counting).
+    # Fires when a sustained stream of another prescribed movement arrives
+    # while the current block has gone quiet: the FSM under-detected the
+    # current block and the athlete has verifiably moved on.
+    # ------------------------------------------------------------------ #
+    def _maybe_realign(self, movement: str, t_now: float) -> bool:
         pend = self.pending.get(movement, [])
-        credits = sum(1 for p in pend if p.outcome == REP)
-        attempts = len(pend)
-        inactivity = t_now - self.last_credit_t.get(cur.movement, -1e9)
-        confirmed = (
-            credits >= SEQ["transition_confirm_reps"]
-            or (credits >= 1 and inactivity >= SEQ["transition_confirm_sec"])
-            # degraded path: a stream of the new movement's attempts with at
-            # least one credit and the current movement quiet — the athlete
-            # has clearly moved on; follow them and flag for review.
-            or (attempts >= 4 and credits >= 1 and inactivity >= 6.0)
-        )
-        if not confirmed:
+        if len(pend) < SEQ["realign_stream"]:
             return False
-        # forward: the next prescribed block of this movement
+        cur_mv = self.current_movement
+        # the current movement must have gone quiet (active work on it means
+        # these attempts are cross-detection noise, not a progression)
+        quiet = t_now - self.last_attempt_t.get(cur_mv, -1e9)
+        if quiet < SEQ["realign_quiet_sec"]:
+            return False
+
+        # forward: the next prescribed block of this movement …
         j = self._next_block_of(movement, self.block_idx + 1)
-        realigned = False
+        realigned_backward = False
         if j is None:
-            # no later block of this movement — but if EARLIER blocks of it
-            # are still incomplete, the sequencer had drifted ahead of the
-            # athlete: realign backward to the earliest incomplete one.
+            # … or backward to the earliest incomplete block of it (the
+            # sequencer had drifted ahead of the athlete)
             j = next((i for i, b in enumerate(self.blocks)
                       if b.movement == movement and not b.complete), None)
             if j is None:
                 return False   # every block of this movement is complete
-            realigned = True
-        if realigned:
+            realigned_backward = True
+        if realigned_backward:
             self._flag("SEQ_REALIGN_BACKWARD", t_now,
                        {"from_block": self.block_idx, "to_block": j,
                         "movement": movement})
@@ -237,148 +265,154 @@ class WodSequencer:
                 self._flag("SEQ_BLOCK_INCOMPLETE", t_now,
                            {"block": k, "movement": self.blocks[k].movement,
                             "credited": self.blocks[k].credited,
+                            "attempts": self.blocks[k].attempts,
                             "reps": self.blocks[k].reps})
-        if skipped and not realigned:
+        if skipped and not realigned_backward:
             self._flag("SEQ_ORDER_DEVIATION", t_now,
                        {"from_block": self.block_idx, "to_block": j})
         self.block_idx = j
-        # re-attribute the attempts held while confirming the switch
+        # re-attribute the attempts held while the realignment was confirming
         held = list(pend)
         self.pending.pop(movement, None)
         for a in held:
             self._attribute(a, t_now)
         return True
 
+    # ------------------------------------------------------------------ #
     def _attribute(self, a: Attempt, t_now: float) -> None:
         post_cap = self.cap and a.t_end > self.cap_abs + SEQ["cap_grace_sec"]
-        cur = self.blocks[self.block_idx]
 
-        # ---- wrong-movement attempt: hold while a switch is confirming ---- #
-        if a.movement != cur.movement:
-            nxt = self._next_block_of(a.movement, self.block_idx + 1)
-            if nxt is None:
-                # no LATER block of this movement — but earlier blocks may
-                # still be incomplete (the sequencer had drifted ahead of
-                # the athlete because of missed detections). Route through
-                # the pending/realign path so those reps find their home.
-                earliest_inc = next((i for i, b in enumerate(self.blocks)
-                                     if b.movement == a.movement
-                                     and not b.complete), None)
-                if earliest_inc is None:
-                    # genuinely no prescribed capacity left → excess of a
-                    # completed movement (not scored)
-                    self.events.append(ScoredEvent(
-                        attempt=a, block_idx=None, rep_no=None, scored=False,
-                        post_cap=post_cap,
-                        block_movement=cur.movement,
-                        notes=["خارج از ترتیب واد"], notes_en=["Out of WOD order"]))
-                    return
-            # a prescribed movement (forward or backward-realign) — hold it
-            # while the switch confirms
-            self.pending.setdefault(a.movement, []).append(a)
-            self._maybe_advance(a.movement, t_now)
-            return
-
-        block = self.blocks[self.block_idx]
-
-        # ---- post-cap attempts: logged, never scored ---- #
-        if post_cap:
+        # ---- every block already complete: excess rep ---- #
+        if self.block_idx >= len(self.blocks):
             self.events.append(ScoredEvent(
                 attempt=a, block_idx=None, rep_no=None, scored=False,
-                post_cap=True, block_movement=block.movement,
+                post_cap=post_cap, block_movement=None,
+                notes=["رپ اضافه — وادی پیش‌تر کامل شده بود"],
+                notes_en=["Excess rep — the WOD was already complete"]))
+            if not any(f["code"] == "SEQ_EXCESS_REPS" for f in self.flags):
+                self._flag("SEQ_EXCESS_REPS", a.t_end, {})
+            return
+
+        cur = self.blocks[self.block_idx]
+
+        # ---- attempt of a DIFFERENT movement than expected ---- #
+        if a.movement != cur.movement and not self.finished:
+            nxt = self._next_block_of(a.movement, self.block_idx + 1)
+            earliest_inc = next((i for i, b in enumerate(self.blocks)
+                                 if b.movement == a.movement
+                                 and not b.complete), None)
+            if nxt is not None or earliest_inc is not None:
+                # a prescribed movement (forward or backward-realign) — hold
+                # it while the realignment is being confirmed
+                self.pending.setdefault(a.movement, []).append(a)
+                # bound the hold: pathological detection noise must not grow
+                # the buffer indefinitely (realignment uses the tail)
+                pend = self.pending[a.movement]
+                if len(pend) > 30:
+                    drop = pend.pop(0)
+                    self._log_mismatch(drop, cur, post_cap)
+                self._maybe_realign(a.movement, t_now)
+                return
+            # genuinely no prescribed capacity left for this movement
+            self._log_mismatch(a, cur, post_cap)
+            return
+        if a.movement != cur.movement and self.finished:
+            # the whole WOD is done — any further attempt is excess
+            if not any(f["code"] == "SEQ_EXCESS_REPS" for f in self.flags):
+                self._flag("SEQ_EXCESS_REPS", a.t_end,
+                           {"movement": a.movement})
+            self.events.append(ScoredEvent(
+                attempt=a, block_idx=None, rep_no=None, scored=False,
+                post_cap=post_cap, block_movement=None,
+                notes=["رپ اضافه — وادی پیش‌تر کامل شده بود"],
+                notes_en=["Excess rep — the WOD was already complete"]))
+            return
+
+        # ---- attempt of the EXPECTED movement, but after the time cap ---- #
+        if post_cap:
+            self.events.append(ScoredEvent(
+                attempt=a, block_idx=self.block_idx, rep_no=None, scored=False,
+                post_cap=True, block_movement=cur.movement,
                 notes=["پس از پایان زمان مجاز — شمرده نشد"],
                 notes_en=["After the time cap — not scored"]))
             return
 
-        # ---- no-rep of the current movement: logged with reason ---- #
-        if a.outcome == NO_REP:
-            self.events.append(ScoredEvent(
-                attempt=a, block_idx=self.block_idx, rep_no=None, scored=False,
-                block_movement=block.movement))
-            return
-
-        # ---- credited rep ---- #
-        if block.credited < block.reps:
-            block.credited += 1
-            self.events.append(ScoredEvent(
-                attempt=a, block_idx=self.block_idx, rep_no=block.credited,
-                scored=True, block_movement=block.movement))
-            if block.credited >= block.reps:
-                block.complete = True
+        # ---- EXPECTED movement, inside the cap: consume a rep slot ------- #
+        # (rep OR no-rep — the user spec: quality never blocks progression)
+        if cur.attempts < cur.reps:
+            cur.attempts += 1
+            overall_rep = cur.rep_start + cur.attempts - 1
+            if a.outcome == REP:
+                cur.credited += 1
+                self.events.append(ScoredEvent(
+                    attempt=a, block_idx=self.block_idx, rep_no=overall_rep,
+                    scored=True, block_movement=cur.movement))
+            else:
+                self.events.append(ScoredEvent(
+                    attempt=a, block_idx=self.block_idx, rep_no=overall_rep,
+                    scored=False, block_movement=cur.movement,
+                    notes=["نورپ — رپ شمرده شد اما امتیاز نگرفت"],
+                    notes_en=["No-rep — the slot was consumed but not scored"]))
+            if cur.attempts >= cur.reps:
+                cur.complete = True
                 self._check_finished()
                 if not self.finished and self.block_idx + 1 < len(self.blocks):
-                    self.block_idx += 1  # natural advance to the next block
-                    self._absorb_pending()
-        else:
-            # this block is full — the rep still has a home if a LATER block
-            # of the SAME movement has room (the engine may have under-
-            # credited the current set due to missed detections; the athlete
-            # continuing the movement flows into the next round of it —
-            # flagged for order review, benefit of the doubt preserved)
-            nxt = self._next_block_of(a.movement, self.block_idx + 1)
-            if nxt is None:
-                # no later block — fall back to the EARLIEST INCOMPLETE block
-                # of this movement (the sequencer had drifted ahead)
-                nxt = next((i for i, b in enumerate(self.blocks)
-                            if b.movement == a.movement
-                            and not b.complete), None)
-                if nxt is not None and nxt != self.block_idx:
-                    self._flag("SEQ_REALIGN_BACKWARD", t_now,
-                               {"from_block": self.block_idx, "to_block": nxt,
-                                "movement": a.movement})
-            if nxt is not None and nxt != self.block_idx and not post_cap:
-                skipped_between = [
-                    k for k in range(min(self.block_idx, nxt),
-                                     max(self.block_idx, nxt) + 1)
-                    if not self.blocks[k].complete]
-                if skipped_between:
-                    self._flag("SEQ_SAME_MOVE_FLOW", t_now,
-                               {"from_block": self.block_idx, "to_block": nxt,
-                                "movement": a.movement})
-                self.block_idx = nxt
-                self._attribute(a, t_now)   # re-attribute into the next block
-                return
-            # no remaining capacity → excess (not scored)
-            if not block.excess_flagged:
-                block.excess_flagged = True
-                self._flag("SEQ_EXCESS_REPS", a.t_end,
-                           {"block": self.block_idx,
-                            "movement": block.movement})
-            self.events.append(ScoredEvent(
-                attempt=a, block_idx=self.block_idx, rep_no=None, scored=False,
-                block_movement=block.movement,
-                notes=["رپ اضافه — بیش از تعداد تعیین‌شده این رند"],
-                notes_en=["Excess rep — beyond this round's prescription"]))
-
-    def _absorb_pending(self) -> None:
-        """After a natural advance, re-attribute any held attempts that
-        belong to the new current block (they were performed slightly
-        before the switch was bookkeeping-visible)."""
-        cur = self.current_movement
-        held = self.pending.pop(cur, None)
-        if not held:
+                    self.block_idx += 1   # natural advance to the next block
             return
-        # attribute held attempts of the NEW current movement, but never
-        # let them double-score: they are credited only within block limits
-        for a in held:
-            self._attribute(a, self.last_activity_t)
 
+        # ---- this block's slots are all consumed already ---- -------------- #
+        # (the last block filled but the workout did not advance, or the
+        # athlete keeps doing the current movement beyond prescription)
+        if not cur.complete:
+            cur.complete = True
+            self._check_finished()
+            if not self.finished and self.block_idx + 1 < len(self.blocks):
+                self.block_idx += 1
+            self._attribute(a, t_now)
+            return
+        if not cur.excess_flagged:
+            cur.excess_flagged = True
+            self._flag("SEQ_EXCESS_REPS", a.t_end,
+                       {"block": self.block_idx,
+                        "movement": cur.movement})
+        self.events.append(ScoredEvent(
+            attempt=a, block_idx=self.block_idx, rep_no=None, scored=False,
+            post_cap=post_cap, block_movement=cur.movement,
+            notes=["رپ اضافه — بیش از تعداد تعیین‌شده این رند"],
+            notes_en=["Excess rep — beyond this round's prescription"]))
+
+    def _log_mismatch(self, a: Attempt, cur: BlockState, post_cap: bool) -> None:
+        self._flag("SEQ_MOVEMENT_MISMATCH", a.t_end,
+                   {"movement": a.movement, "expected": cur.movement})
+        self.events.append(ScoredEvent(
+            attempt=a, block_idx=self.block_idx, rep_no=None, scored=False,
+            post_cap=post_cap, block_movement=cur.movement,
+            notes=["خارج از ترتیب واد — در این نقطه حرکت دیگری منتظر بود"],
+            notes_en=["Out of WOD order — a different movement was expected here"]))
+
+    # ------------------------------------------------------------------ #
     def flush(self, t_end: float) -> None:
         """Stream end: emit any attempts still held in pending as
         out-of-order events so the log is complete."""
         for movement, held in list(self.pending.items()):
             for a in held:
+                cur = (self.blocks[self.block_idx]
+                       if self.block_idx < len(self.blocks) else None)
+                self._flag("SEQ_MOVEMENT_MISMATCH", a.t_end,
+                           {"movement": movement,
+                            "expected": cur.movement if cur else None})
                 self.events.append(ScoredEvent(
                     attempt=a, block_idx=None, rep_no=None, scored=False,
-                    block_movement=self.current_movement,
-                    notes=["خارج از ترتیب واد"], notes_en=["Out of WOD order"]))
+                    block_movement=cur.movement if cur else None,
+                    notes=["خارج از ترتیب واد — در این نقطه حرکت دیگری منتظر بود"],
+                    notes_en=["Out of WOD order — a different movement was expected here"]))
             self.pending[movement] = []
 
     def _check_finished(self) -> None:
         if all(b.complete for b in self.blocks):
             self.finished = True
-            scored = [e for e in self.events if e.scored]
-            last = max((e.attempt.t_end for e in scored), default=self.t_start)
+            consumed = [e for e in self.events if e.rep_no is not None]
+            last = max((e.attempt.t_end for e in consumed), default=self.t_start)
             self.finish_time = max(0.0, last - self.t_start)
 
     # ------------------------------------------------------------------ #
@@ -387,9 +421,7 @@ class WodSequencer:
         never goes blind when the sequencer drifts from the athlete's real
         position (observed: whole movements disappearing when a drifted
         sequencer disabled their FSM). Cross-movement interference is
-        prevented by the per-movement PATTERN gates, not by disabling. The
-        only task left here: force-close FSMs that are disabled for other
-        reasons (none currently) — kept for interface stability."""
+        prevented by the per-movement PATTERN gates, not by disabling."""
         closed = []
         for fsm in fsms:
             if not fsm.enabled:
@@ -401,21 +433,22 @@ class WodSequencer:
         per_movement: dict[str, dict] = {}
         for b in self.blocks:
             m = per_movement.setdefault(b.movement, {
-                "credited": 0, "no_reps": 0, "prescribed": 0,
+                "attempted": 0, "credited": 0, "no_reps": 0, "prescribed": 0,
                 "complete_blocks": 0, "avg_confidence": None,
                 "borderline_reps": 0})
+            m["attempted"] += b.attempts
             m["credited"] += b.credited
+            m["no_reps"] += b.no_reps
             m["prescribed"] += b.reps
             m["complete_blocks"] += 1 if b.complete else 0
         credited_confs: list[float] = []
         borderline_total = 0
         for e in self.events:
-            if e.attempt.outcome == NO_REP and not e.post_cap:
-                m = per_movement.setdefault(e.attempt.movement, {
-                    "credited": 0, "no_reps": 0, "prescribed": 0,
+            if e.attempt.outcome == NO_REP and e.rep_no is not None:
+                per_movement.setdefault(e.attempt.movement, {
+                    "attempted": 0, "credited": 0, "no_reps": 0, "prescribed": 0,
                     "complete_blocks": 0, "avg_confidence": None,
                     "borderline_reps": 0})
-                m["no_reps"] += 1
             if e.scored:
                 credited_confs.append(e.attempt.confidence)
                 if e.attempt.borderline:
@@ -430,13 +463,14 @@ class WodSequencer:
             m["avg_confidence"] = (round(sum(confs) / len(confs), 2)
                                    if confs else None)
         last_block = max(
-            (i for i, b in enumerate(self.blocks) if b.credited > 0),
+            (i for i, b in enumerate(self.blocks) if b.attempts > 0),
             default=None)
         return {
             "finished": self.finished,
             "finish_time_sec": round(self.finish_time, 2) if self.finished else None,
             "capped": (not self.finished) and self.cap > 0,
             "total_credited": sum(b.credited for b in self.blocks),
+            "total_attempted": sum(b.attempts for b in self.blocks),
             "total_prescribed": sum(b.reps for b in self.blocks),
             "per_movement": per_movement,
             "blocks": [b.to_dict(i, self.labels_fa.get(b.movement, b.movement),

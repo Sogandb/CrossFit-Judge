@@ -252,28 +252,88 @@ function spawnServer(): ChildProcess {
 
 let pyProcess: ChildProcess | null = null;
 let startPromise: Promise<void> | null = null;
+let warmupStartedAt = 0;
 
-export async function ensureServer(): Promise<void> {
-  if (await isServerAlive()) return;
-  if (pyProcess) pyProcess = null;
-  if (startPromise) return startPromise;
-  startPromise = (async () => {
-    if (await isServerAlive()) return;
-    // SELF-HEALING GATE: repair the environment BEFORE spawning (a wiped
-    // venv/model is exactly what kills analysis mid-run after resets).
-    try {
-      await ensureDeps();
-    } catch (e) {
-      startPromise = null;
-      throw e;
-    }
-    pyProcess = spawnServer();
-    await waitForServer();
-  })();
+export interface ServerStatus {
+  /** Engine responds on :8001 */
+  alive: boolean;
+  /** Install/spawn still in progress (e.g. right after a sandbox reset) */
+  warming: boolean;
+  /** How long the current warmup has been running (ms) */
+  elapsedMs: number;
+}
+
+function _sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/**
+ * Ensure the Python engine is up — WITHOUT hanging the caller.
+ *
+ * Cold-start reality (measured after sandbox resets): when the venv was
+ * wiped, ensureDeps() reinstalls ~40-120 s BEFORE uvicorn can even spawn.
+ * A request that blocks on that gets killed by preview-tunnel timeouts
+ * (the user sees a frozen 1% upload bar / a crash error). Instead:
+ *
+ *   * engine alive            → resolves immediately
+ *   * warmup already running  → waits at most maxWaitMs, then reports
+ *                               {warming:true} so the caller can answer
+ *                               503 + warming_up and the CLIENT retries
+ *                               politely while showing a preparing message
+ *   * no warmup yet           → starts one (install + spawn) and waits
+ *                               the same bounded time
+ *   * warmup FAILED           → throws (caller returns an honest error)
+ */
+export async function ensureServer(maxWaitMs = 20_000): Promise<ServerStatus> {
+  if (await isServerAlive()) return { alive: true, warming: false, elapsedMs: 0 };
+  const started = Date.now();
+  if (!startPromise) {
+    warmupStartedAt = Date.now();
+    startPromise = (async () => {
+      if (await isServerAlive()) return;
+      // SELF-HEALING GATE: repair the environment BEFORE spawning (a wiped
+      // venv/model is exactly what kills analysis mid-run after resets).
+      try {
+        await ensureDeps();
+      } catch (e) {
+        startPromise = null;
+        throw e;
+      }
+      pyProcess = spawnServer();
+      await waitForServer();
+    })();
+    // A rejected warmup must not become an unhandled rejection for the
+    // fire-and-forget callers; ensureServer re-throws per caller instead.
+    startPromise.catch(() => { /* handled by awaiters */ });
+  }
   try {
-    await startPromise;
+    await Promise.race([startPromise, _sleep(maxWaitMs)]);
   } catch (e) {
     startPromise = null;
     throw e;
   }
+  if (await isServerAlive()) {
+    return { alive: true, warming: false, elapsedMs: Date.now() - started };
+  }
+  return { alive: false, warming: true, elapsedMs: Date.now() - warmupStartedAt };
+}
+
+/**
+ * Fire-and-forget engine warm — called at Next.js boot (instrumentation)
+ * so the FIRST user request usually meets a ready engine instead of a
+ * cold-start install. Safe to call repeatedly.
+ */
+export function startBackgroundWarm(): void {
+  if (startPromise) return;
+  const t0 = Date.now();
+  console.log("[judge-engine] background warm-up starting …");
+  ensureServer(300_000)
+    .then((st) => {
+      console.log(`[judge-engine] background warm-up done ` +
+        `(alive=${st.alive}, ${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+    })
+    .catch((e) => {
+      console.error("[judge-engine] background warm-up FAILED:", e);
+      startPromise = null;
+    });
 }

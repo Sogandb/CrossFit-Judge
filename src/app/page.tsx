@@ -32,6 +32,7 @@ export default function Home() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploadPct, setUploadPct] = useState(0);
+  const [engineWarming, setEngineWarming] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const resultRef = useRef<HTMLDivElement>(null);
@@ -107,6 +108,7 @@ export default function Home() {
     setError(null);
     setResult(null);
     setUploadPct(0);
+    setEngineWarming(false);
     setPhase("uploading");
     const controller = new AbortController();
     abortRef.current = controller;
@@ -126,6 +128,9 @@ export default function Home() {
           setUploadPct(pct);
           onProgress?.(pct);
         },
+        // "warming" = the engine is self-repairing after a server restart;
+        // show an honest preparing message instead of a frozen 0-1 % bar.
+        onStatus: (s) => setEngineWarming(s === "warming"),
       });
       setJob({
         id: r.job_id, created_at: Date.now() / 1000, status: "queued",
@@ -139,6 +144,7 @@ export default function Home() {
     } catch (e) {
       abortRef.current = null;
       setPhase("idle");
+      setEngineWarming(false);
       if (e instanceof DOMException && e.name === "AbortError") {
         toast({ title: t("proc.cancelled") });
         return; // user-initiated cancel — already handled
@@ -156,6 +162,7 @@ export default function Home() {
     setResult(null);
     setError(null);
     setUploadPct(0);
+    setEngineWarming(false);
   }, [stopPolling]);
 
   const handleReset = useCallback(() => {
@@ -167,6 +174,7 @@ export default function Home() {
     setResult(null);
     setError(null);
     setUploadPct(0);
+    setEngineWarming(false);
   }, [stopPolling]);
 
   /** Retry a failed analysis WITHOUT re-uploading — the video is already
@@ -316,6 +324,7 @@ export default function Home() {
                   phase={phase === "uploading" ? "uploading" : "processing"}
                   job={job}
                   uploadPct={uploadPct}
+                  engineWarming={engineWarming}
                   onCancel={handleCancel}
                 />
               </div>

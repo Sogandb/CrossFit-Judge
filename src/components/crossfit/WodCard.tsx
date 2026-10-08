@@ -13,6 +13,26 @@ import { cn } from "@/lib/utils";
 
 const RUNGS = [18, 15, 12, 9, 6, 3];
 
+/** The exact expected rep sequence — mirrors the engine's rep_timeline:
+ * Thruster 1–18 | 37–51 | 67–78 | 91–99 | 109–114 | 121–123
+ * Burpee   19–36 | 52–66 | 79–90 | 100–108 | 115–120 | 124–126 */
+const LADDER_RANGES: { round: number; thr: string; bfb: string }[] = (() => {
+  const out: { round: number; thr: string; bfb: string }[] = []
+  let cum = 0
+  for (let i = 0; i < RUNGS.length; i++) {
+    const r = RUNGS[i]
+    const thr = [cum + 1, cum + r]
+    const bfb = [cum + r + 1, cum + 2 * r]
+    out.push({
+      round: i + 1,
+      thr: thr[0] === thr[1] ? `${thr[0]}` : `${thr[0]}–${thr[1]}`,
+      bfb: bfb[0] === bfb[1] ? `${bfb[0]}` : `${bfb[0]}–${bfb[1]}`,
+    })
+    cum += 2 * r
+  }
+  return out
+})();
+
 const THRUSTER_STANDARDS: { title: string; items: string[] }[] = [
   {
     title: "Start of Movement",
@@ -122,6 +142,28 @@ export function WodCard() {
               )}
             </span>
           ))}
+        </div>
+
+        {/* the exact expected sequence — rep ranges per movement (the same
+            table the judge engine enforces, block by block) */}
+        <div className="rounded-lg border border-edge bg-panel-2/40 overflow-hidden">
+          <div className="px-3 py-2 border-b border-edge/60">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-ink-2">
+              {t("wod.repSequenceTitle")}
+            </p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1.5 px-3 py-2.5">
+            {LADDER_RANGES.map((r) => (
+              <div key={r.round} className="text-[11px] leading-5">
+                <span className="text-ink-4 tabular-nums me-1">R{r.round}</span>
+                <span className="text-ink-2 font-semibold">Thr</span>
+                <span className="text-ink-3 font-mono tabular-nums"> {r.thr} </span>
+                <span className="text-ink-4">·</span>
+                <span className="text-ink-2 font-semibold"> Bur </span>
+                <span className="text-ink-3 font-mono tabular-nums">{r.bfb}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         <p className="text-xs leading-relaxed text-ink-3">

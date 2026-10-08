@@ -65,7 +65,7 @@ def health():
     return {
         "ok": True,
         "service": "crossfit-judge",
-        "version": "2.2.0",
+        "version": "2.4.0",
         "model_present": (MODELS_DIR / MODEL_FILENAME).exists(),
         "deps_ok": deps_ok,
         "deps_error": deps_error,
@@ -716,18 +716,52 @@ class FileRangeResponse(Response):
                          f"bytes {start}-{end}/{self.size}".encode()))
         await send({"type": "http.response.start", "status": status,
                     "headers": hdrs})
-        with open(self.path, "rb") as f:
-            f.seek(start)
-            remaining = length
-            while remaining > 0:
-                data = f.read(min(self.chunk, remaining))
-                if not data:
-                    break
-                remaining -= len(data)
-                await send({"type": "http.response.body", "body": data,
-                            "more_body": remaining > 0})
-        await send({"type": "http.response.body", "body": b"",
-                    "more_body": False})
+
+        # Browsers ABORT range requests all the time (seeking / unmounting
+        # the <video> element). Without a disconnect watcher the send loop
+        # keeps pushing chunks into a closed response and uvicorn logs
+        # "Unexpected ASGI message 'http.response.body'". Watch for the
+        # client disconnect concurrently and stop streaming quietly.
+        import asyncio
+
+        disconnected = False
+
+        async def _watch_disconnect() -> None:
+            nonlocal disconnected
+            while True:
+                msg = await receive()
+                if msg.get("type") == "http.disconnect":
+                    disconnected = True
+                    return
+
+        watcher = asyncio.ensure_future(_watch_disconnect())
+        completed = False
+        try:
+            with open(self.path, "rb") as f:
+                f.seek(start)
+                remaining = length
+                while remaining > 0 and not disconnected:
+                    data = f.read(min(self.chunk, remaining))
+                    if not data:
+                        break
+                    remaining -= len(data)
+                    completed = remaining <= 0
+                    try:
+                        await send({"type": "http.response.body", "body": data,
+                                    "more_body": not completed})
+                    except Exception:
+                        return  # client vanished mid-send — stop quietly
+            # Only close explicitly when the last data chunk did NOT already
+            # complete the response (early break / empty range / disconnect
+            # race) — sending after completion is the ASGI error.
+            if not completed and not disconnected:
+                try:
+                    await send({"type": "http.response.body", "body": b"",
+                                "more_body": False})
+                except Exception:
+                    pass
+        finally:
+            watcher.cancel()
 
 
 if __name__ == "__main__":

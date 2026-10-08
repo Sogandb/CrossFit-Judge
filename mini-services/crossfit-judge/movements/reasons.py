@@ -172,6 +172,11 @@ REASONS: dict[str, dict] = {
         "fa": "توالی حرکات با ترتیب واد مطابقت نداشت — بازبینی توصیه می‌شود",
         "en": "Movement order deviated from the prescribed WOD sequence — review recommended",
     },
+    "SEQ_MOVEMENT_MISMATCH": {
+        "category": "REVIEW",
+        "fa": "این تلاش مربوط به حرکتی است که در این نقطه از واد منتظر نبود — شمرده نشد",
+        "en": "This attempt was of a movement not expected at this point of the WOD — not counted",
+    },
     "SEQ_REALIGN_BACKWARD": {
         "category": "REVIEW",
         "fa": "سیستم توالی را با موقعیت واقعی ورزشکار هم‌راستا کرد (رندی که پیش‌تر ناقص مانده بود) — بازبینی توصیه می‌شود",

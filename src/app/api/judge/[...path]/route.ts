@@ -38,10 +38,26 @@ async function proxy(
   const targetPath = `/api/${pathStr}?${url.searchParams.toString()}`;
 
   // Ensure the Python server is running before we pipe (TTL-cached).
+  // BOUNDED wait: after a sandbox reset the self-healing reinstall takes
+  // 40-120 s — a request that blocks on that dies inside the preview tunnel
+  // (the user sees a frozen upload bar). Instead we answer 503 warming_up
+  // FAST and let the client retry politely until the engine is ready.
   if (Date.now() - lastAliveAt > ALIVE_TTL_MS) {
     try {
-      await ensureServer();
-      lastAliveAt = Date.now();
+      const st = await ensureServer(20_000);
+      if (st.alive) {
+        lastAliveAt = Date.now();
+      } else {
+        // warmup still running (deps reinstall / spawn)
+        return Response.json(
+          {
+            error: "Analysis engine is starting up — please retry",
+            warming_up: true,
+            retry_after_sec: 5,
+          },
+          { status: 503, headers: { "Retry-After": "5" } },
+        );
+      }
     } catch (e: unknown) {
       lastAliveAt = 0;
       const msg = e instanceof Error ? e.message : 'Server start failed';

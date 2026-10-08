@@ -171,7 +171,7 @@ class Analyzer:
         disp = score_display(summary)
 
         result = {
-            "engine_version": "2.1.0",
+            "engine_version": "2.4.0",
             "wod": {
                 "id": wod.get("wod_id"),
                 "name_fa": wod.get("name_fa"),

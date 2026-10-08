@@ -31,19 +31,23 @@ interface Props {
   phase: "uploading" | "processing";
   job: JobInfo | null;
   uploadPct: number;
+  /** The analysis engine is self-repairing after a server restart — the
+   *  upload will start automatically once it is ready (typically < 2 min). */
+  engineWarming?: boolean;
   onCancel: () => void;
 }
 
-export function StatusPanel({ phase, job, uploadPct, onCancel }: Props) {
+export function StatusPanel({ phase, job, uploadPct, engineWarming, onCancel }: Props) {
   const { t, lang } = useLang();
   const isUploading = phase === "uploading";
+  const warming = !!engineWarming && isUploading;
   const pct = isUploading ? uploadPct : Math.round(job?.progress ?? 0);
   const idx = stageIndex(job);
 
   const stageText = job
     ? (lang === "fa" ? job.stage_fa : job.stage_en) || t("proc.defaultMsg")
     : t("proc.uploadSub");
-  const subtitle = isUploading ? t("proc.uploadSub") : stageText;
+  const subtitle = warming ? t("proc.warming") : isUploading ? t("proc.uploadSub") : stageText;
   const title = isUploading ? t("proc.uploading") : t("proc.analyzing");
 
   return (
@@ -67,13 +71,16 @@ export function StatusPanel({ phase, job, uploadPct, onCancel }: Props) {
       <div className="space-y-2">
         <div className="h-2 rounded-full bg-chip overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-300"
+            className={cn(
+              "h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-300",
+              warming && "animate-pulse",
+            )}
             style={{ width: `${Math.max(2, pct)}%` }}
           />
         </div>
         <div className="flex items-center justify-between text-xs text-ink-3">
-          <span>{isUploading ? t("proc.uploadingLabel") : subtitle}</span>
-          <span className="tabular-nums">{pct}%</span>
+          <span>{warming ? t("proc.warmingLabel") : isUploading ? t("proc.uploadingLabel") : subtitle}</span>
+          <span className="tabular-nums">{warming ? "—" : `${pct}%`}</span>
         </div>
       </div>
 

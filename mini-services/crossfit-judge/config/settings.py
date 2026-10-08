@@ -176,13 +176,16 @@ BFB = {
 }
 
 # --------------------------------------------------------------------------- #
-# Orchestrator (WOD sequencer) — TRANSITION guards & recovery
+# Orchestrator (WOD sequencer) — STRICT rep-range state machine (user spec):
+# blocks advance on ATTEMPT COUNT (rep or no-rep both consume a slot); these
+# parameters only govern the RECOVERY realignment when the FSM under-detected
+# a block and the athlete has verifiably moved on.
 # --------------------------------------------------------------------------- #
 SEQ = {
-    "transition_confirm_reps": 2,     # credits of the next movement that confirm a block switch
-    "transition_confirm_sec": 2.0,    # ... or 1 credit + this much inactivity of the old movement
-    "stale_block_sec": 45.0,          # no activity at all for this long → flag review
-    "cap_grace_sec": 0.0,             # reps must end ≤ t_start + cap (no grace — rulebook)
+    "realign_stream": 2,         # wrong-movement attempts that confirm the athlete moved on
+    "realign_quiet_sec": 4.0,    # current movement quiet this long before realigning
+    "stale_block_sec": 45.0,     # no activity at all for this long → flag review
+    "cap_grace_sec": 0.0,        # reps must end ≤ t_start + cap (no grace — rulebook)
 }
 
 # --------------------------------------------------------------------------- #

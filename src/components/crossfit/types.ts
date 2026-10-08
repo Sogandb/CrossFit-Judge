@@ -50,7 +50,10 @@ export interface BlockSummary {
   movement_fa: string;
   movement_en: string;
   reps: number;
+  /** slots consumed (reps + no-reps — progression count) */
+  attempts: number;
   credited: number;
+  no_reps: number;
   complete: boolean;
   rep_start: number;
   rep_end: number;
@@ -122,11 +125,12 @@ export interface AnalysisResult {
     finish_time_sec: number | null;
     capped: boolean;
     total_credited: number;
+    total_attempted: number;
     total_prescribed: number;
     analysis_confidence: number | null;
     borderline_reps: number;
     per_movement: Record<string, {
-      credited: number; no_reps: number; prescribed: number;
+      attempted: number; credited: number; no_reps: number; prescribed: number;
       avg_confidence: number | null; borderline_reps?: number;
     }>;
     blocks: BlockSummary[];

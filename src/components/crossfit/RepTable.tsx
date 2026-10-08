@@ -77,7 +77,10 @@ export function RepTable({ events, selectedIdx, onSeek }: Props) {
                   )}
                 >
                   <TableCell className="font-mono text-xs text-ink-3 tabular-nums">
-                    {n(i + 1)}
+                    {/* the OVERALL prescribed rep number (1–126) when the
+                     * attempt consumed a WOD slot; "—" for out-of-order /
+                     * post-cap / excess rows that consumed none */}
+                    {ev.rep_no != null ? n(ev.rep_no) : <span className="text-ink-4">—</span>}
                   </TableCell>
                   <TableCell>
                     {isNoRep ? (

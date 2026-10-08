@@ -58,6 +58,10 @@ export const DICT: Record<string, Entry> = {
 
   // ---------- workout card ---------- //
   "wod.timeCap": { en: "10 min cap", fa: "محدودیت ۱۰ دقیقه" },
+  "wod.repSequenceTitle": {
+    en: "Expected rep sequence (what the judge counts)",
+    fa: "توالی مورد انتظار رپ‌ها (آنچه داور می‌شمارد)",
+  },
   "wod.scoring": { en: "Scoring", fa: "امتیازدهی" },
   "wod.standardsThruster": { en: "Movement Standards — Thruster", fa: "استاندارد حرکت — Thruster" },
   "wod.standardsBfb": { en: "Movement Standards — Bar-Facing Burpee", fa: "استاندارد حرکت — Bar-Facing Burpee" },
@@ -109,6 +113,14 @@ export const DICT: Record<string, Entry> = {
   "proc.defaultMsg": { en: "Running pose detection & rep counting", fa: "اجرای تشخیص حرکت و شمارش رپ" },
   "proc.cancel": { en: "Cancel", fa: "لغو" },
   "proc.uploadingLabel": { en: "Uploading…", fa: "در حال ارسال…" },
+  "proc.warming": {
+    en: "Preparing the analysis engine (one-time after a server restart) — your upload starts automatically in a moment",
+    fa: "در حال آماده‌سازی موتور تحلیل (یک‌باره پس از ری‌استارت سرور) — ارسال ویدیو به‌زودی خودکار شروع می‌شود",
+  },
+  "proc.warmingLabel": {
+    en: "Preparing engine…",
+    fa: "آماده‌سازی موتور…",
+  },
   "proc.uploadChunkHint": {
     en: "Your video is sent in small adaptive chunks — the size tunes itself to your connection, and interrupted uploads resume automatically.",
     fa: "ویدیو در قالب تکه‌های کوچکِ هوشمند ارسال می‌شود — اندازهٔ تکه‌ها خودکار با اتصال شما تنظیم می‌شود و در صورت قطع شدن، از همان‌جا ادامه می‌یابد.",
@@ -182,6 +194,14 @@ export const DICT: Record<string, Entry> = {
   "res.movement": { en: "Movement", fa: "حرکت" },
   "res.status": { en: "Status", fa: "وضعیت" },
   "res.credited": { en: "Credited", fa: "تأییدشده" },
+  "res.attempted": {
+    en: "Counted (reps + no-reps)",
+    fa: "شمرده‌شده (رپ + نورپ)",
+  },
+  "res.countedLabel": {
+    en: "Counted (progress)",
+    fa: "شمارش رند (پیشروی)",
+  },
   "res.reviewOutput": { en: "Review Output", fa: "خروجی بازبینی" },
   "res.reviewHint": {
     en: "Annotated with skeleton overlay, live rep counter and workout clock. Click any row in the breakdown to jump to that moment.",

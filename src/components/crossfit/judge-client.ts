@@ -22,7 +22,10 @@ import type {
 } from "./types";
 
 async function json<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, init);
+  // Never hang forever: a request stuck behind a cold-starting engine (or a
+  // dead tunnel) must fail fast so callers can retry or show an error.
+  const signal = init?.signal ?? AbortSignal.timeout(30_000);
+  const res = await fetch(path, { ...init, signal });
   if (!res.ok) {
     let detail = res.statusText;
     try {
@@ -98,6 +101,16 @@ const CHUNK_MAX_ATTEMPTS = 5;
 const FLOOR_STALL_LIMIT = 3;
 /** Cap on server-truth resyncs per upload. */
 const MAX_RESYNCS = 12;
+/** How long init / chunks / complete keep retrying while the engine is
+ * WARMING UP (self-healing reinstall after a sandbox reset takes 40-120 s;
+ * the proxy answers 503 {warming_up:true} fast instead of hanging). */
+const WARMING_BUDGET_MS = 6 * 60_000;
+const WARMING_RETRY_MS = 4_000;
+
+/** True when a response is the engine-warmup 503 (retry patiently). */
+function isWarming503(status: number, body: Record<string, unknown> | undefined): boolean {
+  return status === 503 && !!(body && body.warming_up);
+}
 
 /** Live transfer telemetry reported alongside the percentage. */
 export interface UploadProgressInfo {
@@ -119,6 +132,9 @@ export interface UploadPayload {
   mockMode?: boolean;
   signal?: AbortSignal;
   onProgress?: (pct: number, info?: UploadProgressInfo) => void;
+  /** Lifecycle signal for the UI: "warming" = the engine is starting
+   *  (post-reset self-repair) and the upload will begin once it is ready. */
+  onStatus?: (status: "warming" | "uploading") => void;
 }
 
 // --------------------------------------------------------------------------- //
@@ -228,15 +244,6 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
-async function errorDetail(res: Response, fallback: string): Promise<string> {
-  try {
-    const b = await res.json();
-    return (b && (b.detail || b.error)) || fallback;
-  } catch {
-    return fallback;
-  }
-}
-
 /** Error that must NOT be retried (bad request / too large / expired session). */
 class PermanentUploadError extends Error {}
 
@@ -343,7 +350,8 @@ async function uploadChunked(payload: UploadPayload): Promise<{ job_id: string }
   try {
     const saved = localStorage.getItem(storeKey);
     if (saved) {
-      const probe = await fetch(`/api/judge/jobs/${saved}/session`, { signal });
+      const probe = await fetch(`/api/judge/jobs/${saved}/session`,
+        { signal: AbortSignal.timeout(15_000) });
       if (probe.ok) {
         const s = await probe.json();
         if (!s.complete && s.registered === false &&
@@ -357,7 +365,7 @@ async function uploadChunked(payload: UploadPayload): Promise<{ job_id: string }
     }
   } catch { /* unreachable session → fresh upload */ }
 
-  // --- init --------------------------------------------------------------- //
+  // --- init (retry patiently while the engine is warming up) ------------- //
   if (jobId === null) {
     const form = new FormData();
     form.append("filename", file.name);
@@ -378,13 +386,44 @@ async function uploadChunked(payload: UploadPayload): Promise<{ job_id: string }
       form.append("pose_source", "mock");
       form.append("mock_block_scale", "0.15");
     }
-    const r = await fetch("/api/judge/jobs/init", { method: "POST", body: form, signal });
-    if (!r.ok) throw new Error(await errorDetail(r, `Server error (${r.status})`));
-    const j = await r.json();
-    jobId = j.job_id as string;
-    sparse = !!j.sparse;
-    try { localStorage.setItem(storeKey, jobId); } catch { /* private mode */ }
+    const deadline = Date.now() + WARMING_BUDGET_MS;
+    for (;;) {
+      let r: Response;
+      try {
+        r = await fetch("/api/judge/jobs/init", { method: "POST", body: form, signal });
+      } catch (e) {
+        if (signal?.aborted) throw e;
+        // network blip — keep trying inside the budget
+        if (Date.now() > deadline)
+          throw new Error("Server is not responding — please check your connection and try again");
+        payload.onStatus?.("warming");
+        await sleep(WARMING_RETRY_MS, signal);
+        continue;
+      }
+      if (r.ok) {
+        const j = await r.json();
+        jobId = j.job_id as string;
+        sparse = !!j.sparse;
+        try { localStorage.setItem(storeKey, jobId); } catch { /* private mode */ }
+        break;
+      }
+      let body: Record<string, unknown> | undefined;
+      try { body = await r.json(); } catch { /* non-JSON */ }
+      if (isWarming503(r.status, body) && Date.now() < deadline) {
+        payload.onStatus?.("warming");
+        await sleep(WARMING_RETRY_MS, signal);
+        continue;
+      }
+      if (isWarming503(r.status, body)) {
+        throw new Error(
+          "The analysis engine is taking too long to start — please try again in a few minutes. " +
+          "— موتور تحلیل در راه‌اندازی است؛ چند دقیقه بعد دوباره تلاش کنید.");
+      }
+      throw new Error((body && (body.detail as string || body.error as string)) ||
+        `Server error (${r.status})`);
+    }
   }
+  payload.onStatus?.("uploading");
 
   // --- shared upload plan --------------------------------------------------- //
   const missing: Range[] = missingFrom(covered, size);
@@ -414,6 +453,7 @@ async function uploadChunked(payload: UploadPayload): Promise<{ job_id: string }
 
   let fatal: unknown = null;            // first permanent/terminal error
   let resyncs = 0;
+  let warmupDeadline = 0;                // set on first mid-upload warming 503
 
   /** Server-truth probe → refill the piece queue with any holes (bounded). */
   const resyncFromServer = async (): Promise<boolean> => {
@@ -527,6 +567,20 @@ async function uploadChunked(payload: UploadPayload): Promise<{ job_id: string }
             }
 
             const b = res.body || {};
+            if (isWarming503(res.status, b)) {
+              // engine restarting mid-upload (post-crash self-repair):
+              // wait patiently — warming responses don't burn attempts
+              if (!warmupDeadline) warmupDeadline = Date.now() + WARMING_BUDGET_MS;
+              if (Date.now() < warmupDeadline) {
+                await sleep(WARMING_RETRY_MS, signal);
+                attempt = 0;
+                continue;
+              }
+              fatal = new PermanentUploadError(
+                "The analysis engine is restarting — please try the upload again in a few minutes. " +
+                "— موتور تحلیل در حال راه‌اندازی مجدد است؛ چند دقیقه بعد دوباره تلاش کنید.");
+              return;
+            }
             if (res.status === 404) {
               fatal = new PermanentUploadError(
                 "Upload session expired — please start the upload again.");
@@ -604,11 +658,34 @@ async function uploadChunked(payload: UploadPayload): Promise<{ job_id: string }
     if (fatal) throw fatal;
   }
 
-  // --- complete -------------------------------------------------------------- //
-  const r2 = await fetch(`/api/judge/jobs/${jobId}/complete`, {
-    method: "POST", signal,
-  });
-  if (!r2.ok) throw new Error(await errorDetail(r2, `Server error (${r2.status})`));
+  // --- complete (retry while the engine is warming up) -------------------- //
+  {
+    const deadline = Date.now() + WARMING_BUDGET_MS;
+    for (;;) {
+      let r2: Response;
+      try {
+        r2 = await fetch(`/api/judge/jobs/${jobId}/complete`, {
+          method: "POST", signal,
+        });
+      } catch (e) {
+        if (signal?.aborted) throw e;
+        if (Date.now() > deadline)
+          throw new Error("Upload finished but the server did not confirm — " +
+            "please check history; the video may need a retry.");
+        await sleep(WARMING_RETRY_MS, signal);
+        continue;
+      }
+      if (r2.ok) break;
+      let body2: Record<string, unknown> | undefined;
+      try { body2 = await r2.json(); } catch { /* non-JSON */ }
+      if (isWarming503(r2.status, body2) && Date.now() < deadline) {
+        await sleep(WARMING_RETRY_MS, signal);
+        continue;
+      }
+      throw new Error((body2 && (body2.detail as string || body2.error as string)) ||
+        `Server error (${r2.status})`);
+    }
+  }
   try {
     localStorage.removeItem(storeKey);
     localStorage.removeItem(sizeKey);

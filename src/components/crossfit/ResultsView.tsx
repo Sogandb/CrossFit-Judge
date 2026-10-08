@@ -158,6 +158,9 @@ export function ResultsView({ jobId, createdAt, athleteName, result }: Props) {
                     {n(m.no_reps)} {t("res.noRepShort")}
                   </p>
                 )}
+                <p className="text-[10px] text-ink-4 mt-1 tabular-nums">
+                  {t("res.countedLabel")}: {n(m.attempted)} / {n(m.prescribed)}
+                </p>
               </div>
             ))}
           </div>
