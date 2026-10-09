@@ -90,15 +90,27 @@ def score_display(summary: dict) -> dict:
                               if conf_pct else None),
         }
     total = summary["total_credited"]
-    return {
+    out = {
         "score": f"{total} reps",
-        "score_fa": f"{total} رپ در زمان مجاز",
-        "score_en": f"{total} reps within the time cap",
-        "status_fa": "در زمان مجاز کامل نشد (کپ)",
-        "status_en": "Not completed within the time cap (capped)",
         "confidence": conf,
         "confidence_fa": (f"میانگین اطمینان تصمیم‌ها: {conf_pct}"
                          if conf_pct else None),
         "confidence_en": (f"Average decision confidence: {conf_pct}"
                           if conf_pct else None),
     }
+    if summary.get("cap_enforced", True):
+        out.update({
+            "score_fa": f"{total} رپ در زمان مجاز",
+            "score_en": f"{total} reps within the time cap",
+            "status_fa": "در زمان مجاز کامل نشد (کپ)",
+            "status_en": "Not completed within the time cap (capped)",
+        })
+    else:
+        out.update({
+            "score_fa": f"{total} رپ تا پایان ویدیو",
+            "score_en": f"{total} reps by the end of the video",
+            "status_fa": "وادی تا پایان ویدیو کامل نشد (شروع واد پیدا نشد؛ محدودیت زمانی اعمال نشد)",
+            "status_en": ("The workout was not completed by the end of the video "
+                          "(start not detected; the time cap was not enforced)"),
+        })
+    return out

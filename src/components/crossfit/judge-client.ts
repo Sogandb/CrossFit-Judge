@@ -61,6 +61,20 @@ export function retryJob(id: string): Promise<{ job_id: string; status: string }
   return json(`/api/judge/jobs/${id}/retry`, { method: "POST" });
 }
 
+/** Re-run the analysis with a manual WOD-start override (no re-upload) —
+ *  the recovery path for SYS_START_NOT_FOUND videos: the user supplies the
+ *  real workout-start timecode from the results page. */
+export function reanalyzeJob(
+  id: string,
+  manualStartSec: number | null,
+): Promise<{ job_id: string; status: string; meta_patch: Record<string, unknown> }> {
+  return json(`/api/judge/jobs/${id}/reanalyze`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(manualStartSec != null ? { manual_start_sec: manualStartSec } : {}),
+  });
+}
+
 /** Fetch just the result document (used to poll the async review video:
  *  the result is final immediately, review_video swaps "pending" → true). */
 export function fetchResult(id: string): Promise<AnalysisResult> {

@@ -54,6 +54,7 @@ export interface BlockSummary {
   attempts: number;
   credited: number;
   no_reps: number;
+  not_detected: number;
   complete: boolean;
   rep_start: number;
   rep_end: number;
@@ -79,10 +80,10 @@ export interface AnalysisEvent {
   reason_fa: string | null;
   reason_en: string | null;
   category: string | null;
-  block_idx: number | null;
+  phase_idx: number | null;
   rep_no: number | null;
   scored: boolean;
-  post_cap: boolean;
+  kind: "slot" | "post_cap" | "noise" | "excess";
   movement: string;
   details: Record<string, unknown>;
   review_flags: string[];
@@ -92,6 +93,27 @@ export interface AnalysisEvent {
   confidence: number;
   confidence_label: "high" | "medium" | "low";
   borderline: boolean;
+}
+
+/** One row of the prescribed 1..126 ladder — THE user-facing count:
+ *  number → movement → verdict, exactly as the WOD is performed. */
+export interface LadderEntry {
+  rep_no: number;
+  movement: string;
+  movement_fa: string;
+  movement_en: string;
+  verdict: "rep" | "no_rep" | "not_detected" | "not_reached";
+  t_start?: number;
+  t_end?: number;
+  scored?: boolean;
+  confidence?: number;
+  confidence_label?: "high" | "medium" | "low";
+  borderline?: boolean;
+  reason_fa?: string | null;
+  reason_en?: string | null;
+  review_flags?: string[];
+  notes?: string[];
+  notes_en?: string[];
 }
 
 export interface StructuredWarning {
@@ -124,17 +146,29 @@ export interface AnalysisResult {
     finished: boolean;
     finish_time_sec: number | null;
     capped: boolean;
+    cap_enforced: boolean;
+    cap_hit: boolean;
     total_credited: number;
+    total_consumed: number;
     total_attempted: number;
+    total_no_reps: number;
+    total_not_detected: number;
+    total_not_reached: number;
     total_prescribed: number;
+    noise_events: number;
+    post_cap_events: number;
+    excess_events: number;
     analysis_confidence: number | null;
     borderline_reps: number;
     per_movement: Record<string, {
       attempted: number; credited: number; no_reps: number; prescribed: number;
+      not_detected?: number;
       avg_confidence: number | null; borderline_reps?: number;
     }>;
     blocks: BlockSummary[];
     rep_timeline?: RepTimelineEntry[];
+    /** THE 1..126 count — one row per prescribed rep */
+    ladder?: LadderEntry[];
   };
   reconciliation: {
     claimed_reps: number | null;

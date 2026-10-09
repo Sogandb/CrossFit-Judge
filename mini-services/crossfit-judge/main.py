@@ -106,7 +106,7 @@ def health():
     return {
         "ok": True,
         "service": "crossfit-judge",
-        "version": "2.4.1",
+        "version": "3.0.0",
         "model_present": (MODELS_DIR / MODEL_FILENAME).exists(),
         "deps_ok": deps_ok and bindings_ok,
         "deps_error": deps_error or bindings_error or None,
@@ -696,6 +696,38 @@ def job_retry(job_id: str):
             409, "Only failed analyses with the video still on the server "
                  "can be retried")
     return {"job_id": job_id, "status": "queued"}
+
+
+@app.post("/api/jobs/{job_id}/reanalyze")
+async def job_reanalyze(job_id: str, request: Request):
+    """Re-run the analysis with a manual WOD-start override — no re-upload.
+
+    Body (JSON, all optional): {"manual_start_sec": <seconds from video
+    start>, ...} — used when the beep start-detection failed and the user
+    supplies the real workout-start timecode from the results page."""
+    if store is None:
+        raise HTTPException(503, "Service is not ready")
+    if store.get(job_id) is None:
+        raise HTTPException(404, "Analysis not found")
+    try:
+        body = await request.json()
+    except Exception:  # noqa: BLE001 — empty body is fine
+        body = {}
+    patch = {}
+    ms = body.get("manual_start_sec")
+    if ms is not None:
+        try:
+            ms = float(ms)
+        except (TypeError, ValueError):
+            raise HTTPException(400, "manual_start_sec must be a number")
+        if ms < 0:
+            raise HTTPException(400, "manual_start_sec must be >= 0")
+        patch["manual_start_sec"] = ms
+    if not store.reanalyze(job_id, patch or None):
+        raise HTTPException(
+            409, "Only done/failed analyses with the video still on the "
+                 "server can be re-analyzed")
+    return {"job_id": job_id, "status": "queued", "meta_patch": patch}
 
 
 @app.get("/api/jobs/{job_id}/result")

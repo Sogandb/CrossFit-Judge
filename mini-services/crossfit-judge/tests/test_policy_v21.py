@@ -87,38 +87,57 @@ def _att(movement, outcome, t, dur=1.0):
                    confidence=0.9)
 
 
-def test_sequencer_realigns_backward_when_drifted_ahead():
-    """The sequencer drifted to the LAST block but the athlete is still
-    working through an earlier movement — reps must find their home."""
+def test_counting_stops_at_prescribed_count():
+    """USER SPEC v3: 'بعدش نباید بشماره و تمام' — once a movement's
+    prescribed count is consumed the state switches EXACTLY there; further
+    attempts of that movement are excess/noise and never score or flow into
+    a later block of the same movement."""
     seq = WodSequencer(_wod(), t_start=0.0, labels_fa={})
-    # simulate: block 0 done, then the sequencer jumps ahead (drift)
-    for i in range(3):
-        seq.feed([_att("thruster", REP, 1.0 + i)], 1.0 + i)   # block 0 full
-    for i in range(3):
-        seq.feed([_att("bar_facing_burpee", REP, 10.0 + i)], 10.0 + i)
-    # burpee blocks 1 and 3 now complete; natural advance to block 2 (T2)
-    assert seq.block_idx == 2
-    seq.block_idx = 3  # force a drift-ahead state (as if detection slipped)
-    # athlete keeps doing thrusters (they were block 2's reps all along)
-    seq.feed([_att("thruster", REP, 30.0)], 30.0)
-    seq.feed([_att("thruster", REP, 31.0)], 31.0)
-    s = seq.summary()
-    assert s["per_movement"]["thruster"]["credited"] == 5, s
-    assert any(f["code"] == "SEQ_REALIGN_BACKWARD" for f in seq.flags)
-
-
-def test_sequencer_same_movement_flow():
-    """More reps of the current movement than the block prescribes flow
-    into the next block of that SAME movement (credited, flagged for
-    order review — via the pending-switch or the flow path)."""
-    seq = WodSequencer(_wod(), t_start=0.0, labels_fa={})
-    for i in range(5):   # block 0 prescribes 3 — two extra flow forward
+    for i in range(5):   # block 0 prescribes 3 — two extra thrusters
         seq.feed([_att("thruster", REP, 1.0 + i)], 1.0 + i)
+    # the state already switched to BURPEE at exactly the 3rd attempt
+    assert seq.current_state == "bar_facing_burpee"
+    assert seq.global_counter == 4
+    # the 2 extra thrusters consumed nothing (noise until the switch)
     s = seq.summary()
-    assert s["per_movement"]["thruster"]["credited"] == 5, s
-    assert any(f["code"] in ("SEQ_SAME_MOVE_FLOW", "SEQ_ORDER_DEVIATION",
-                             "SEQ_BLOCK_INCOMPLETE")
-               for f in seq.flags), seq.flags
+    assert s["per_movement"]["thruster"]["credited"] == 3, s
+    assert s["per_movement"]["thruster"]["attempted"] == 3
+    # finish the WOD properly: 3 burpees + 2 thrusters + 2 burpees
+    t = 10.0
+    for mv, n in [("bar_facing_burpee", 3), ("thruster", 2),
+                  ("bar_facing_burpee", 2)]:
+        for i in range(n):
+            seq.feed([_att(mv, REP, t)], t + 1)
+            t += 2.0
+    s = seq.summary()
+    assert s["finished"]
+    assert s["total_credited"] == 10
+    assert s["total_consumed"] == 10
+    # the extra thrusters were never numbered
+    numbered = [e for e in seq.events if e.rep_no is not None]
+    assert len(numbered) == 10
+
+
+def test_no_backward_jumps_athlete_never_goes_back():
+    """USER SPEC v3: forward-only. When the last phase is active and a
+    stream of an earlier movement arrives, it is noise — the sequencer
+    never jumps BACK to re-fill an earlier phase."""
+    seq = WodSequencer(_wod(), t_start=0.0, labels_fa={})
+    t = 1.0
+    for mv, n in [("thruster", 3), ("bar_facing_burpee", 3),
+                  ("thruster", 2), ("bar_facing_burpee", 2)]:
+        for i in range(n):
+            seq.feed([_att(mv, REP, t)], t + 1)
+            t += 2.0
+    assert seq.finished
+    # late thruster attempts after the WOD is complete → excess, not backward
+    seq.feed([_att("thruster", REP, 50.0)], 51.0)
+    seq.feed([_att("thruster", REP, 52.0)], 53.0)
+    s = seq.summary()
+    assert s["total_consumed"] == 10
+    assert s["excess_events"] == 2
+    assert s["per_movement"]["thruster"]["credited"] == 5
+    assert not any("REALIGN" in f["code"] for f in seq.flags)
 
 
 def test_rep_timeline_maps_overall_rep_numbers():

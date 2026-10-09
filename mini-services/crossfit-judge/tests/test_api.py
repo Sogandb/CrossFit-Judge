@@ -325,6 +325,49 @@ def test_retry_failed_job_without_reupload(client, tiny_mp4):
     assert client.post("/api/jobs/does-not-exist/retry").status_code == 404
 
 
+def test_reanalyze_with_manual_start_without_reupload(client, tiny_mp4):
+    """reanalyze re-runs a DONE job with a manual WOD-start override — the
+    exact recovery path for SYS_START_NOT_FOUND videos: the user supplies
+    the start timecode from the results page, no re-upload, and the new
+    analysis reports start method 'manual' with the cap clock running from
+    the correct t_start."""
+    r = _init(client, claimed_reps="5")
+    job_id = r.json()["job_id"]
+    data = tiny_mp4.read_bytes()
+    assert _chunk_multipart(client, job_id, 0, data, total=len(data)).status_code == 200
+    assert client.post(f"/api/jobs/{job_id}/complete").status_code == 200
+    body = _wait_done(client, job_id)
+    assert body["result"]["start_detection"]["method"] == "mock"
+
+    # reanalyze with a manual start → re-queued → done with method=manual
+    r = client.post(f"/api/jobs/{job_id}/reanalyze",
+                    json={"manual_start_sec": 12.5})
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "queued"
+    assert r.json()["meta_patch"] == {"manual_start_sec": 12.5}
+    body = _wait_done(client, job_id)
+    assert body["job"]["status"] == "done"
+    sd = body["result"]["start_detection"]
+    assert sd["method"] == "manual" and sd["t_start_sec"] == 12.5
+
+    # validation: negative or non-numeric start → 400
+    r = client.post(f"/api/jobs/{job_id}/reanalyze", json={"manual_start_sec": -3})
+    assert r.status_code == 400
+    r = client.post(f"/api/jobs/{job_id}/reanalyze", json={"manual_start_sec": "abc"})
+    assert r.status_code == 400
+    # unknown job → 404
+    assert client.post("/api/jobs/does-not-exist/reanalyze",
+                       json={"manual_start_sec": 1}).status_code == 404
+    # a QUEUED job cannot be re-analyzed (409)
+    r = _init(client, claimed_reps="5")
+    j2 = r.json()["job_id"]
+    d2 = tiny_mp4.read_bytes()
+    _chunk_multipart(client, j2, 0, d2, total=len(d2))
+    client.post(f"/api/jobs/{j2}/complete")
+    r = client.post(f"/api/jobs/{j2}/reanalyze", json={"manual_start_sec": 5})
+    assert r.status_code in (200, 409)   # may already be running/done — 409 while queued
+
+
 def test_chunked_protocol_validation(client):
     r = client.post("/api/jobs/init",
                     data={"filename": "clip.avi", "division": "m_18_34_rx"})

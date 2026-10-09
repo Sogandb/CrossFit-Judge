@@ -10,9 +10,10 @@ export function StatsGrid({ result }: { result: AnalysisResult }) {
   const { t, n } = useLang();
   const { summary } = result;
 
-  const noRepCount = result.events.filter(
-    (e) => e.outcome === "no_rep" && !e.post_cap,
-  ).length;
+  const noRepCount = summary.total_no_reps ??
+    result.events.filter(
+      (e) => e.outcome === "no_rep" && (e.kind ?? "slot") === "slot",
+    ).length;
 
   const conf = summary.analysis_confidence;
 
@@ -39,10 +40,16 @@ export function StatsGrid({ result }: { result: AnalysisResult }) {
       bg: "bg-orange-500/10",
     },
     {
-      label: summary.finished ? t("res.time") : t("res.capStatus"),
+      label: summary.finished
+        ? t("res.time")
+        : summary.cap_enforced === false
+          ? t("res.capNotApplied")
+          : t("res.capStatus"),
       value: summary.finished
         ? n(fmtTime(summary.finish_time_sec))
-        : t("res.capStatus"),
+        : summary.cap_enforced === false
+          ? "—"
+          : t("res.capStatus"),
       icon: Clock,
       color: "text-ink-2",
       bg: "bg-chip",

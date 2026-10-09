@@ -187,6 +187,21 @@ REASONS: dict[str, dict] = {
         "fa": "ورزشکار همین حرکت را ادامه داد و رپ‌ها در رند بعدیِ همان حرکت منظور شد — بازبینی ترتیب توصیه می‌شود",
         "en": "The athlete continued the same movement — reps were credited to the next round of that movement; order review recommended",
     },
+    "SEQ_SLOTS_NOT_DETECTED": {
+        "category": "REVIEW",
+        "fa": "تعدادی رپ در این بخش توسط دوربین/تشخیص دیده نشد — شماره‌های آن‌ها در جدول با وضعیت «تشخیص داده نشد» آمده و امتیازی برای آن‌ها ثبت نشد (بدون حدس زدن)",
+        "en": "Some reps in this segment were not seen by detection — their numbers appear as 'not detected' in the ladder with no verdict invented for them",
+    },
+    "SEQ_TIME_CAP": {
+        "category": "INFO",
+        "fa": "زمان مجاز واد به پایان رسید — تلاش‌های بعد از آن شمرده نشدند",
+        "en": "The WOD time cap was reached — later attempts were not counted",
+    },
+    "SYS_CAP_UNKNOWN_START": {
+        "category": "INFO",
+        "fa": "چون شروع واد پیدا نشد، محدودیت زمانی ۱۰ دقیقه قابل اعمال دقیق نیست و اعمال نشد — همه تلاش‌های ویدیو شمرده شدند",
+        "en": "The workout start could not be detected, so the 10-minute cap cannot be applied fairly and was NOT enforced — all attempts in the video were counted",
+    },
 }
 
 

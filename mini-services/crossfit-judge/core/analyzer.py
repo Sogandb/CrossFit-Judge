@@ -102,12 +102,21 @@ class Analyzer:
         # ---------------- 3. analysis window ---------------- #
         wod = self.job["wod"]
         cap = float(wod.get("time_cap_sec") or 0)
+        if not mock and start_method == "video_start" and cap:
+            warnings.append(_warning("SYS_CAP_UNKNOWN_START"))
+        # The time cap is only enforceable when the WOD start is KNOWN
+        # (beeps or manual). With an undetected start, running the cap clock
+        # from t=0 would silently discard real reps at the video tail — the
+        # single biggest under-counting source on real phone videos.
+        cap_enforced = start_method in ("beep", "manual", "mock")
         window_start = max(0.0, t_start - PREROLL_SEC)
         if mock:
             window_end = None
-        else:
+        elif cap and cap_enforced:
             duration = info.duration_sec
-            window_end = min(duration, t_start + (cap if cap else duration) + 90.0)
+            window_end = min(duration, t_start + cap + 90.0)
+        else:
+            window_end = info.duration_sec   # analyze the WHOLE video
         scene = SceneModel()
 
         # ---------------- 4. pose source ---------------- #
@@ -120,7 +129,7 @@ class Analyzer:
                 blocks, faults=self.meta.get("mock_faults") or {},
                 lead_in_sec=t_start)
             pose_source = _MockDetector(frames)
-            frame_iter = _MockFrameIterator(len(frames))
+            frame_iter = _MockFrameIterator(frames)
             total_frames = len(frames)
         elif cache_path:
             import pickle
@@ -141,7 +150,8 @@ class Analyzer:
 
         sequencer = WodSequencer(wod, t_start=t_start,
                                  labels_fa=MOVEMENT_LABELS_FA,
-                                 labels_en=MOVEMENT_LABELS_EN)
+                                 labels_en=MOVEMENT_LABELS_EN,
+                                 cap_enforced=cap_enforced)
         fsms = [ThrusterFSM(), BarFacingBurpeeFSM()]
 
         # ---------------- 5. frame loop ---------------- #
@@ -171,7 +181,7 @@ class Analyzer:
         disp = score_display(summary)
 
         result = {
-            "engine_version": "2.4.0",
+            "engine_version": "3.0.0",
             "wod": {
                 "id": wod.get("wod_id"),
                 "name_fa": wod.get("name_fa"),
@@ -396,13 +406,19 @@ class _ReplayIterator:
 
 
 class _MockFrameIterator:
-    """FrameSource-shaped adapter producing dummy black frames."""
+    """FrameSource-shaped adapter producing dummy black frames.
 
-    def __init__(self, n: int, w: int = 640, h: int = 360):
+    Timestamps come from the MOCK FRAMES THEMSELVES (they are generated at
+    the mock's native fps) — NOT from frame_index/TARGET_FPS. The old
+    i/TARGET_FPS remapping ran a 30 fps synthetic stream at half speed,
+    inflating a ~345 s workout to ~680 s and blowing the 600 s time cap
+    (besides skewing every time-based FSM threshold)."""
+
+    def __init__(self, frames: list[PoseFrame], w: int = 640, h: int = 360):
         import numpy as np
-        self.n = n
+        self._frames = frames
         self.frame = np.zeros((h, w, 3), dtype=np.uint8)
 
     def frames(self):
-        for i in range(self.n):
-            yield i, i / TARGET_FPS, self.frame
+        for i, f in enumerate(self._frames):
+            yield i, f.timestamp, self.frame

@@ -177,6 +177,16 @@ export default function Home() {
     setEngineWarming(false);
   }, [stopPolling]);
 
+  /** Re-run the analysis of the CURRENT job with a manual WOD-start
+   *  override (no re-upload) — triggered from the results page when the
+   *  beep start-detection failed. Switches back to the processing view. */
+  const handleReanalyze = useCallback((jobId: string) => {
+    setResult(null);
+    setPhase("processing");
+    poll(jobId);
+    toast({ title: t("res.reanalyzeStarted") });
+  }, [poll, t]);
+
   /** Retry a failed analysis WITHOUT re-uploading — the video is already
    *  on the server; only the engine re-runs (transient failures such as
    *  engine restarts / environment hiccups are exactly this case). */
@@ -376,6 +386,7 @@ export default function Home() {
                   createdAt={job.created_at}
                   athleteName={job.athlete_name}
                   result={result}
+                  onReanalyze={handleReanalyze}
                 />
               </div>
             )}

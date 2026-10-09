@@ -47,7 +47,8 @@ export function UploadForm({ grouped, weightsVerified, onSubmit, onCancelUpload,
   const [timeMode, setTimeMode] = useState<TimeMode>("time");
   const [claimMin, setClaimMin] = useState("");
   const [claimSec, setClaimSec] = useState("");
-  const [manualStart, setManualStart] = useState("");
+  const [manualStartMin, setManualStartMin] = useState("");
+  const [manualStartSec, setManualStartSec] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -85,8 +86,12 @@ export function UploadForm({ grouped, weightsVerified, onSubmit, onCancelUpload,
       }
       timeSec = m * 60 + s;
     }
-    const ms = manualStart.trim() === "" ? null : Number(manualStart);
-    if (ms != null && (Number.isNaN(ms) || ms < 0)) {
+    const mMin = Number(manualStartMin || 0);
+    const mSec = Number(manualStartSec || 0);
+    const ms = (manualStartMin.trim() === "" && manualStartSec.trim() === "")
+      ? null
+      : mMin * 60 + mSec;
+    if (ms != null && (Number.isNaN(mMin) || Number.isNaN(mSec) || ms < 0)) {
       toast({ title: t("form.errManualStart"), variant: "destructive" });
       return;
     }
@@ -294,17 +299,30 @@ export function UploadForm({ grouped, weightsVerified, onSubmit, onCancelUpload,
 
       {/* manual start */}
       <div className="space-y-1.5">
-        <Label htmlFor="mstart" className="text-xs font-semibold text-ink-2">
+        <Label htmlFor="mstart-m" className="text-xs font-semibold text-ink-2">
           {t("form.manualStart")}
         </Label>
-        <Input
-          id="mstart"
-          className="w-40 bg-panel tabular-nums"
-          inputMode="numeric"
-          value={manualStart}
-          onChange={(e) => setManualStart(e.target.value)}
-          placeholder="0:00 (sec)"
-        />
+        <div className="flex items-center gap-2">
+          <Input
+            id="mstart-m"
+            className="w-20 bg-panel text-center tabular-nums"
+            inputMode="numeric"
+            value={manualStartMin}
+            onChange={(e) => setManualStartMin(e.target.value.replace(/\D/g, "").slice(0, 2))}
+            placeholder="mm"
+            aria-label={t("form.minutes")}
+          />
+          <span className="text-ink-3">:</span>
+          <Input
+            id="mstart-s"
+            className="w-20 bg-panel text-center tabular-nums"
+            inputMode="numeric"
+            value={manualStartSec}
+            onChange={(e) => setManualStartSec(e.target.value.replace(/\D/g, "").slice(0, 2))}
+            placeholder="ss"
+            aria-label={t("form.seconds")}
+          />
+        </div>
         <p className="text-xs text-ink-3">{t("form.manualStartHint")}</p>
       </div>
 

@@ -255,6 +255,33 @@ class JobStore:
         self._q.put(job_id)
         return True
 
+    def reanalyze(self, job_id: str, meta_patch: Optional[dict] = None) -> bool:
+        """Re-run the analysis of a DONE or FAILED job with updated meta
+        (e.g. a manual WOD start time) — WITHOUT re-uploading the video.
+
+        The primary use case: the beep start-detection failed
+        (SYS_START_NOT_FOUND), so the user supplies the real workout-start
+        timecode from the results page and the whole judging is re-run with
+        a known t_start (cap clock, preroll calibration, warmup exclusion).
+        """
+        job = self.get(job_id)
+        if job is None or job["status"] not in ("done", "failed"):
+            return False
+        if not (UPLOADS_DIR / job_id / "original.mp4").exists():
+            return False
+        meta = dict(job["meta"])
+        if meta_patch:
+            meta.update(meta_patch)
+        with self._lock:
+            self._db.execute(
+                "UPDATE jobs SET status='queued', stage='queued', progress=0, "
+                "error_fa=NULL, error_en=NULL, result_json=NULL, meta_json=? "
+                "WHERE id = ?",
+                (json.dumps(meta, ensure_ascii=False), job_id))
+            self._db.commit()
+        self._q.put(job_id)
+        return True
+
     # ------------------------------------------------------------------ #
     # Worker
     # ------------------------------------------------------------------ #

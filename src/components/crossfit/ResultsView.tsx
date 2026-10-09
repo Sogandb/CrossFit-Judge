@@ -2,15 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ClipboardCheck, ShieldAlert, Download, Flag, Video,
+  ClipboardCheck, ShieldAlert, Download, Flag, Video, TimerReset, Loader2,
 } from "lucide-react";
-import type { AnalysisResult, AnalysisEvent } from "./types";
+import type { AnalysisResult, AnalysisEvent, LadderEntry } from "./types";
 import { ScoreCard } from "./ScoreCard";
 import { StatsGrid } from "./StatsGrid";
-import { BlocksTable } from "./BlocksTable";
 import { RepTable } from "./RepTable";
 import { AnnotatedVideoPlayer } from "./AnnotatedVideoPlayer";
-import { fetchResult } from "./judge-client";
+import { fetchResult, reanalyzeJob } from "./judge-client";
 import { MOVEMENT_LABELS, useLang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -19,12 +18,19 @@ interface Props {
   createdAt: number;
   athleteName?: string;
   result: AnalysisResult;
+  /** Re-queue this job for analysis (manual-start re-run) — the page
+   *  switches back to the processing view and polls. */
+  onReanalyze?: (jobId: string) => void;
 }
 
-export function ResultsView({ jobId, createdAt, athleteName, result }: Props) {
+export function ResultsView({ jobId, createdAt, athleteName, result, onReanalyze }: Props) {
   const { t, n, clock, dateTime, lang } = useLang();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [selectedEvent, setSelectedEvent] = useState<number | null>(null);
+  const [selectedRep, setSelectedRep] = useState<number | null>(null);
+  const [reMin, setReMin] = useState("");
+  const [reSec, setReSec] = useState("");
+  const [reBusy, setReBusy] = useState(false);
+  const [reError, setReError] = useState<string | null>(null);
 
   // ---- async review video: poll "pending" → ready, then swap in ------- //
   // The judging result is FINAL the moment this view renders; only the
@@ -50,18 +56,41 @@ export function ResultsView({ jobId, createdAt, athleteName, result }: Props) {
     return () => clearInterval(id);
   }, [review, jobId]);
 
+  // only slot attempts participate in the flagged-for-review list
   const events = useMemo(
     () => [...result.events].sort((a, b) => a.t_start - b.t_start),
     [result.events],
   );
-  const reviewFlagged = events.filter((e) => e.review_flags?.length);
+  const reviewFlagged = events.filter(
+    (e: AnalysisEvent) => (e.kind ?? "slot") === "slot" && e.review_flags?.length,
+  );
   const rec = result.reconciliation;
+  const startNotFound = result.start_detection.method === "video_start";
 
-  const seekTo = (ev: AnalysisEvent, idx: number) => {
-    setSelectedEvent(idx);
-    if (videoRef.current) {
-      videoRef.current.currentTime = Math.max(0, ev.t_start - 0.5);
+  const seekTo = (row: LadderEntry) => {
+    setSelectedRep(row.rep_no);
+    if (videoRef.current && row.t_start != null) {
+      videoRef.current.currentTime = Math.max(0, row.t_start - 0.5);
       videoRef.current.play().catch(() => undefined);
+    }
+  };
+
+  const submitReanalyze = async () => {
+    setReError(null);
+    const m = Number(reMin || 0);
+    const s = Number(reSec || 0);
+    const total = m * 60 + s;
+    if (Number.isNaN(m) || Number.isNaN(s) || total <= 0) {
+      setReError(t("res.reanalyzeErrTime"));
+      return;
+    }
+    setReBusy(true);
+    try {
+      await reanalyzeJob(jobId, total);
+      onReanalyze?.(jobId);
+    } catch {
+      setReError(t("res.reanalyzeErrGeneric"));
+      setReBusy(false);
     }
   };
 
@@ -100,6 +129,52 @@ export function ResultsView({ jobId, createdAt, athleteName, result }: Props) {
 
       <ScoreCard result={result} />
 
+      {/* workout-start correction — the honest fix for SYS_START_NOT_FOUND */}
+      {startNotFound && onReanalyze && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-4">
+          <h3 className="flex items-center gap-2 text-sm font-bold text-ink">
+            <TimerReset className="h-4 w-4 text-amber-500" />
+            {t("res.startFixTitle")}
+          </h3>
+          <p className="mt-1 text-[13px] leading-6 text-ink-2">
+            {t("res.startFixHint")}
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <input
+              inputMode="numeric"
+              value={reMin}
+              onChange={(e) => setReMin(e.target.value.replace(/\D/g, "").slice(0, 2))}
+              placeholder="mm"
+              className="w-14 rounded-lg border border-edge bg-panel px-2 py-1.5 text-center text-sm tabular-nums outline-none focus:border-brand"
+              aria-label="minutes"
+            />
+            <span className="text-ink-4">:</span>
+            <input
+              inputMode="numeric"
+              value={reSec}
+              onChange={(e) => setReSec(e.target.value.replace(/\D/g, "").slice(0, 2))}
+              placeholder="ss"
+              className="w-14 rounded-lg border border-edge bg-panel px-2 py-1.5 text-center text-sm tabular-nums outline-none focus:border-brand"
+              aria-label="seconds"
+            />
+            <button
+              type="button"
+              onClick={submitReanalyze}
+              disabled={reBusy}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-lg bg-ink text-panel px-4 py-2",
+                "text-sm font-semibold transition-opacity hover:opacity-90",
+                reBusy && "opacity-60 cursor-wait",
+              )}
+            >
+              {reBusy && <Loader2 className="h-4 w-4 animate-spin" />}
+              {t("res.reanalyzeBtn")}
+            </button>
+            {reError && <span className="text-xs text-brand-fg">{reError}</span>}
+          </div>
+        </div>
+      )}
+
       {/* claimed-score reconciliation */}
       <div className={`rounded-xl border p-4 ${verdictTone}`}>
         <div className="flex items-start gap-3">
@@ -135,7 +210,7 @@ export function ResultsView({ jobId, createdAt, athleteName, result }: Props) {
 
       <StatsGrid result={result} />
 
-      {/* per-movement breakdown (v1) */}
+      {/* per-movement breakdown */}
       {Object.keys(result.summary.per_movement).length > 1 && (
         <div className="rounded-xl border border-edge bg-panel p-4">
           <h3 className="text-sm font-semibold text-ink mb-3">{t("res.perMovement")}</h3>
@@ -158,6 +233,11 @@ export function ResultsView({ jobId, createdAt, athleteName, result }: Props) {
                     {n(m.no_reps)} {t("res.noRepShort")}
                   </p>
                 )}
+                {m.not_detected ? (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 tabular-nums">
+                    {n(m.not_detected)} {t("res.notDetectedShort")}
+                  </p>
+                ) : null}
                 <p className="text-[10px] text-ink-4 mt-1 tabular-nums">
                   {t("res.countedLabel")}: {n(m.attempted)} / {n(m.prescribed)}
                 </p>
@@ -167,7 +247,7 @@ export function ResultsView({ jobId, createdAt, athleteName, result }: Props) {
         </div>
       )}
 
-      {/* review video + rep table (v1 two-column grid) */}
+      {/* review video + THE ladder (user's exact 1..126 count) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         {review === true ? (
           <AnnotatedVideoPlayer jobId={jobId} videoRef={videoRef} />
@@ -187,10 +267,8 @@ export function ResultsView({ jobId, createdAt, athleteName, result }: Props) {
         ) : (
           <div className="hidden lg:block" />
         )}
-        <RepTable events={events} selectedIdx={selectedEvent} onSeek={seekTo} />
+        <RepTable result={result} selectedRep={selectedRep} onSeek={seekTo} />
       </div>
-
-      <BlocksTable result={result} />
 
       {/* flagged for human review */}
       {(result.warnings.length > 0 || reviewFlagged.length > 0 ||
@@ -206,7 +284,10 @@ export function ResultsView({ jobId, createdAt, athleteName, result }: Props) {
             ))}
             {reviewFlagged.slice(0, 8).map((ev, i) => (
               <li key={`f${i}`}>
-                <span className="tabular-nums text-ink-3">{clock(ev.t_start)}</span>
+                <span className="tabular-nums text-ink-3">
+                  {ev.rep_no != null ? `#${n(ev.rep_no)} · ` : ""}
+                  {clock(ev.t_start)}
+                </span>
                 {" — "}
                 {MOVEMENT_LABELS[ev.movement] ?? ev.movement}
                 <span className="inline-flex items-center gap-1 ms-1.5 text-amber-600 dark:text-amber-400">
