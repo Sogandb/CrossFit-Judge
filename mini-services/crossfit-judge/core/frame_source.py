@@ -31,14 +31,42 @@ class VideoInfo:
     size_bytes: int
 
 
+class ToolMissing(RuntimeError):
+    """ffmpeg/ffprobe is not installed (or not on PATH) — NOT a bad video."""
+
+
+def tools_status() -> dict:
+    import shutil
+    return {"ffmpeg": shutil.which("ffmpeg") is not None,
+            "ffprobe": shutil.which("ffprobe") is not None}
+
+
+def _rotation_deg(video: dict) -> int:
+    """Display rotation from the container (phones record portrait video as a
+    landscape stream + a rotation flag). ffmpeg auto-applies it on decode, so
+    all downstream geometry must use the DISPLAYED size."""
+    try:
+        r = video.get("tags", {}).get("rotate")
+        if r is not None:
+            return int(float(r)) % 360
+        for sd in video.get("side_data_list", []) or []:
+            if "rotation" in sd:
+                return int(round(float(sd["rotation"]))) % 360
+    except Exception:
+        pass
+    return 0
+
+
 def probe(path: str) -> Optional[VideoInfo]:
     cmd = [
         "ffprobe", "-hide_banner", "-loglevel", "error",
         "-print_format", "json", "-show_streams", "-show_format", path,
     ]
     try:
-        out = subprocess.run(cmd, capture_output=True, timeout=60).stdout
+        out = subprocess.run(cmd, capture_output=True, timeout=120).stdout
         data = json.loads(out or b"{}")
+    except FileNotFoundError as e:
+        raise ToolMissing("ffprobe") from e
     except Exception:
         return None
     streams = data.get("streams", [])
@@ -62,10 +90,25 @@ def probe(path: str) -> Optional[VideoInfo]:
         duration = float(fmt.get("duration") or video.get("duration") or 0)
     except Exception:
         duration = 0.0
+    if duration <= 0:
+        # MediaRecorder-style WebM/MKV carry no duration header: read it from
+        # the stream tags or the last packet timestamp.
+        try:
+            tag = (video.get("tags") or {}).get("DURATION") or (fmt.get("tags") or {}).get("DURATION")
+            if tag:
+                h, m, sec = str(tag).split(":")
+                duration = int(h) * 3600 + int(m) * 60 + float(sec)
+        except Exception:
+            duration = 0.0
+    if duration <= 0:
+        duration = _duration_by_scan(path)
+    w, h = int(video.get("width") or 0), int(video.get("height") or 0)
+    if _rotation_deg(video) in (90, 270):
+        w, h = h, w          # use the DISPLAYED (auto-rotated) geometry
     return VideoInfo(
         duration_sec=duration,
-        width=int(video.get("width") or 0),
-        height=int(video.get("height") or 0),
+        width=w,
+        height=h,
         fps=r_fps or avg_fps or 25.0,
         avg_fps=avg_fps or r_fps or 25.0,
         vfr=bool(r_fps and avg_fps and abs(r_fps - avg_fps) > 0.5),
@@ -73,6 +116,19 @@ def probe(path: str) -> Optional[VideoInfo]:
         has_audio=audio,
         size_bytes=int(fmt.get("size") or 0),
     )
+
+
+def _duration_by_scan(path: str) -> float:
+    """Last-resort duration: timestamp of the final video packet."""
+    try:
+        out = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
+             "packet=pts_time", "-of", "csv=p=0", path],
+            capture_output=True, timeout=300).stdout.decode().split()
+        vals = [float(x) for x in out if x.replace(".", "", 1).isdigit()]
+        return max(vals) if vals else 0.0
+    except Exception:
+        return 0.0
 
 
 class FrameSource:

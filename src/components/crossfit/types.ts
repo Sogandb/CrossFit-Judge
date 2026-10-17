@@ -3,11 +3,13 @@
 export interface Division {
   id: string;
   label_fa: string;
+  label_en: string;
   weight_kg: number | null;
   weights_verified: boolean;
 }
 
 export interface DivisionsResponse {
+  /** group keys are English ("Men" / "Women") — division terms stay English */
   grouped: Record<string, Division[]>;
   weights_verified: boolean;
 }
@@ -15,9 +17,15 @@ export interface DivisionsResponse {
 export interface WodSummary {
   wod_id: string;
   name_fa: string;
+  name_en: string;
+  format: string;
   format_fa: string;
+  format_en: string;
   time_cap_sec: number;
   description_fa: string;
+  description_en: string;
+  score_fa: string;
+  score_en: string;
   blocks: { movement: string; reps: number }[];
 }
 
@@ -25,9 +33,12 @@ export interface JobInfo {
   id: string;
   created_at: number;
   status: "queued" | "running" | "done" | "failed";
+  stage_key: string;
   stage_fa: string;
+  stage_en: string;
   progress: number;
   error_fa: string | null;
+  error_en: string | null;
   athlete_name?: string;
   division?: string;
   wod_id?: string;
@@ -37,10 +48,28 @@ export interface BlockSummary {
   idx: number;
   movement: string;
   movement_fa: string;
+  movement_en: string;
   reps: number;
+  /** slots consumed (reps + no-reps — progression count) */
+  attempts: number;
   credited: number;
+  no_reps: number;
+  not_detected: number;
   complete: boolean;
+  rep_start: number;
+  rep_end: number;
   status_fa: string;
+  status_en: string;
+}
+
+export interface RepTimelineEntry {
+  block: number;
+  movement: string;
+  movement_fa: string;
+  movement_en: string;
+  rep_start: number;
+  rep_end: number;
+  reps: number;
 }
 
 export interface AnalysisEvent {
@@ -49,23 +78,63 @@ export interface AnalysisEvent {
   outcome: "rep" | "no_rep";
   reason_code: string | null;
   reason_fa: string | null;
+  reason_en: string | null;
   category: string | null;
-  block_idx: number | null;
+  phase_idx: number | null;
   rep_no: number | null;
   scored: boolean;
-  post_cap: boolean;
+  kind: "slot" | "post_cap" | "noise" | "excess";
   movement: string;
   details: Record<string, unknown>;
   review_flags: string[];
   notes: string[];
+  notes_en: string[];
+  expected_movement: string | null;
+  confidence: number;
+  confidence_label: "high" | "medium" | "low";
+  borderline: boolean;
+}
+
+/** One row of the prescribed 1..126 ladder — THE user-facing count:
+ *  number → movement → verdict, exactly as the WOD is performed. */
+export interface LadderEntry {
+  rep_no: number;
+  movement: string;
+  movement_fa: string;
+  movement_en: string;
+  verdict: "rep" | "no_rep" | "not_detected" | "not_reached";
+  t_start?: number;
+  t_end?: number;
+  scored?: boolean;
+  confidence?: number;
+  confidence_label?: "high" | "medium" | "low";
+  borderline?: boolean;
+  reason_fa?: string | null;
+  reason_en?: string | null;
+  review_flags?: string[];
+  notes?: string[];
+  notes_en?: string[];
+}
+
+export interface StructuredWarning {
+  code: string;
+  fa: string;
+  en: string;
 }
 
 export interface AnalysisResult {
   wod: {
     id: string;
     name_fa: string;
+    name_en: string;
+    format: string;
+    format_fa: string;
+    format_en: string;
     time_cap_sec: number;
     description_fa: string;
+    description_en: string;
+    score_fa: string;
+    score_en: string;
   };
   start_detection: {
     method: string;
@@ -77,12 +146,29 @@ export interface AnalysisResult {
     finished: boolean;
     finish_time_sec: number | null;
     capped: boolean;
+    cap_enforced: boolean;
+    cap_hit: boolean;
     total_credited: number;
+    total_consumed: number;
+    total_attempted: number;
+    total_no_reps: number;
+    total_not_detected: number;
+    total_not_reached: number;
     total_prescribed: number;
+    noise_events: number;
+    post_cap_events: number;
+    excess_events: number;
+    analysis_confidence: number | null;
+    borderline_reps: number;
     per_movement: Record<string, {
-      credited: number; no_reps: number; prescribed: number;
+      attempted: number; credited: number; no_reps: number; prescribed: number;
+      not_detected?: number;
+      avg_confidence: number | null; borderline_reps?: number;
     }>;
     blocks: BlockSummary[];
+    rep_timeline?: RepTimelineEntry[];
+    /** THE 1..126 count — one row per prescribed rep */
+    ladder?: LadderEntry[];
   };
   reconciliation: {
     claimed_reps: number | null;
@@ -93,12 +179,36 @@ export interface AnalysisResult {
     time_delta_sec: number | null;
     verdict: string;
     verdict_fa: string;
+    verdict_en: string;
     review_recommended: boolean;
   };
-  score_display: { score: string; score_fa: string; status_fa: string };
+  score_display: {
+    score: string;
+    score_fa: string;
+    score_en: string;
+    status_fa: string;
+    status_en: string;
+    confidence?: number | null;
+    confidence_fa?: string | null;
+    confidence_en?: string | null;
+    final_time_sec?: number | null;
+    final_time_text?: string;
+    final_time_kind?: "finish" | "cap" | "last_rep";
+    final_reps?: number;
+  };
+  /** v2.1 headline: reps counted + the time the clock STOPPED */
+  overview?: {
+    reps_counted: number; no_reps: number; attempts: number; prescribed: number;
+    stop_time_sec: number | null; stop_time_text: string;
+    stop_kind: "finish" | "cap" | "last_rep";
+    stop_kind_fa: string; stop_kind_en: string;
+    line_fa: string; line_en: string;
+  };
   events: AnalysisEvent[];
-  sequencer_flags: { t: number; code: string; reason_fa: string }[];
-  warnings: string[];
-  review_video: boolean;
+  sequencer_flags: { t: number; code: string; reason_fa: string; reason_en: string }[];
+  warnings: StructuredWarning[];
+  /** true = review video ready; false = unavailable; "pending" = rendering
+   *  in the background (results are final already — UI polls for the swap). */
+  review_video: boolean | "pending";
   analysis_window: { start_sec: number; end_sec: number | null };
 }

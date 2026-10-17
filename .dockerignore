@@ -1,0 +1,14 @@
+.git
+.next
+node_modules
+**/__pycache__
+**/*.pyc
+.env
+.env.*
+!.env.example
+mini-services/crossfit-judge/venv
+mini-services/crossfit-judge/data/uploads
+mini-services/crossfit-judge/data/*.db*
+mini-services/crossfit-judge/tests
+*.log
+docs

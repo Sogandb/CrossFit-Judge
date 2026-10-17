@@ -9,30 +9,90 @@
  * route or direct gateway URLs. This is simpler and more robust.
  */
 
-import { ensureServer } from '@/lib/python-server';
+import { ensureServer, ENGINE_HOST, ENGINE_PORT } from '@/lib/python-server';
 import http from 'node:http';
+import { appendFile } from 'node:fs/promises';
 import { Readable } from 'node:stream';
 
-const BACKEND_HOST = '127.0.0.1';
-const BACKEND_PORT = 8001;
+const BACKEND_HOST = ENGINE_HOST;
+const BACKEND_PORT = ENGINE_PORT;
+// Optional file access log (empty = disabled; container logs are enough).
+const ACCESS_LOG = process.env.JUDGE_PROXY_ACCESS_LOG || '';
 
 export const maxDuration = 3600; // long enough for large video uploads
+
+/**
+ * Timestamped access log — one line per request, evidence forever.
+ * Diagnoses "did the phone's request ever reach us?" instantly after any
+ * user report (the Oct-8 tunnel death took hours to forensicate without it).
+ * Fire-and-forget: logging must never block or break a streaming upload.
+ */
+function logAccess(
+  method: string,
+  path: string,
+  status: number,
+  ms: number,
+  reqLen: number | null,
+  ua: string,
+): void {
+  const line = `${new Date().toISOString()} ${method} /${path} ${status} ${ms}ms ` +
+    `req=${reqLen ?? '-'}B ua="${ua.slice(0, 160)}"\n`;
+  if (!ACCESS_LOG) return;
+  appendFile(ACCESS_LOG, line, 'utf-8').catch(() => {/* logging is best-effort */});
+}
+
+/**
+ * Liveness cache — chunked uploads fire MANY small requests (adaptive
+ * chunking); running a health-check + potential dep-verification per
+ * request adds avoidable latency to every chunk. A recent-positive check
+ * is trusted for a short TTL, and any backend connection error
+ * invalidates it immediately.
+ */
+let lastAliveAt = 0;
+const ALIVE_TTL_MS = 15_000;
 
 async function proxy(
   req: Request,
   context: { params: Promise<{ path: string[] }> },
 ): Promise<Response> {
+  const t0 = Date.now();
   const { path } = await context.params;
   const pathStr = path.join('/');
   const url = new URL(req.url);
   const targetPath = `/api/${pathStr}?${url.searchParams.toString()}`;
+  const ua = req.headers.get('user-agent') || '';
+  const reqLen = Number(req.headers.get('content-length')) || null;
+  const log = (status: number) =>
+    logAccess(req.method, pathStr, status, Date.now() - t0, reqLen, ua);
 
-  // Ensure the Python server is running before we pipe.
-  try {
-    await ensureServer();
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'Server start failed';
-    return Response.json({ error: msg }, { status: 503 });
+  // Ensure the Python server is running before we pipe (TTL-cached).
+  // BOUNDED wait: after a sandbox reset the self-healing reinstall takes
+  // 40-120 s — a request that blocks on that dies inside the preview tunnel
+  // (the user sees a frozen upload bar). Instead we answer 503 warming_up
+  // FAST and let the client retry politely until the engine is ready.
+  if (Date.now() - lastAliveAt > ALIVE_TTL_MS) {
+    try {
+      const st = await ensureServer(20_000);
+      if (st.alive) {
+        lastAliveAt = Date.now();
+      } else {
+        // warmup still running (deps reinstall / spawn)
+        log(503);
+        return Response.json(
+          {
+            error: "Analysis engine is starting up — please retry",
+            warming_up: true,
+            retry_after_sec: 5,
+          },
+          { status: 503, headers: { "Retry-After": "5" } },
+        );
+      }
+    } catch (e: unknown) {
+      lastAliveAt = 0;
+      const msg = e instanceof Error ? e.message : 'Server start failed';
+      log(503);
+      return Response.json({ error: msg }, { status: 503 });
+    }
   }
 
   // Convert the web ReadableStream to a Node readable stream for piping.
@@ -80,10 +140,13 @@ async function proxy(
             headers: respHeaders,
           }),
         );
+        log(proxyRes.statusCode || 200);
       },
     );
 
     proxyReq.on('error', (err) => {
+      lastAliveAt = 0; // backend unreachable → re-ensure on the next request
+      log(502);
       resolve(
         Response.json(
           { error: `Proxy error: ${err.message}` },

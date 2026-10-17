@@ -53,6 +53,18 @@ class MovementFSM(abc.ABC):
         consumes the frame without state changes."""
         return self.enabled
 
+    def deactivate(self) -> None:
+        """Counter-driven gating: the sequencer does not expect this movement
+        right now. Drop any open attempt silently (it was never expected, so
+        it must never surface as a no-rep) and stop consuming frames."""
+        self.enabled = False
+        disc = getattr(self, "_discard", None)
+        if callable(disc):
+            disc()
+
+    def activate(self) -> None:
+        self.enabled = True
+
     def collect(self) -> list[Attempt]:
         out, self._outbox = self._outbox, []
         return out

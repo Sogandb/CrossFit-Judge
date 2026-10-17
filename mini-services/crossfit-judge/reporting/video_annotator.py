@@ -60,6 +60,9 @@ def annotate_video(src_path: str, dst_path: str, result: dict,
     window_start = float(window.get("start_sec") or 0.0)
     window_end = window.get("end_sec")
     t_start = float(result["start_detection"]["t_start_sec"])
+    ov = result.get("overview") or {}
+    stop_sec = ov.get("stop_time_sec")           # clock freezes here
+    stop_kind = ov.get("stop_kind")
 
     scored, no_reps = _active_events(result)
     # merged banner timeline: last event whose t_end has passed
@@ -100,7 +103,8 @@ def annotate_video(src_path: str, dst_path: str, result: dict,
                 t_abs = window_start + t_rel
                 frame = annotate_frame(bgr, t_abs, t_start, scored,
                                        banners, hold_sec,
-                                       font_big, font_small)
+                                       font_big, font_small,
+                                       stop_sec=stop_sec, stop_kind=stop_kind)
                 enc.stdin.write(frame.tobytes())
         finally:
             try:
@@ -112,7 +116,7 @@ def annotate_video(src_path: str, dst_path: str, result: dict,
 
 def annotate_frame(bgr, t_abs: float, t_start: float, scored: list[dict],
                    banners: list[tuple[float, str, str]], hold_sec: float,
-                   font_big, font_small):
+                   font_big, font_small, stop_sec=None, stop_kind=None):
     from PIL import Image
     import numpy as np  # local import (mediapipe already requires numpy)
 
@@ -123,6 +127,9 @@ def annotate_frame(bgr, t_abs: float, t_start: float, scored: list[dict],
     # credited reps so far
     credited = sum(1 for e in scored if e["t_end"] <= t_abs)
     clock = t_abs - t_start
+    stopped = stop_sec is not None and clock >= stop_sec
+    if stopped:
+        clock = stop_sec                     # the clock STOPS (last rep / time cap)
 
     # banner: latest event within the hold window
     active = None
@@ -143,9 +150,12 @@ def annotate_frame(bgr, t_abs: float, t_start: float, scored: list[dict],
         draw.rectangle([w - bw, 0, w, h], fill=border)
 
     # clock (top-left)
-    clock_txt = f"T {_fmt_clock(clock)}"
-    draw.rectangle([12, 12, 230, 62], fill=(0, 0, 0, 160))
-    draw.text((22, 18), clock_txt, fill=(255, 255, 255), font=font_big)
+    suffix = {"finish": " FINISH", "cap": " CAP", "last_rep": " END"}.get(stop_kind, "") if stopped else ""
+    clock_txt = f"T {_fmt_clock(clock)}{suffix}"
+    cw = draw.textlength(clock_txt, font=font_big)
+    draw.rectangle([12, 12, 40 + cw, 62], fill=(0, 0, 0, 160))
+    draw.text((22, 18), clock_txt, fill=(255, 220, 90) if stopped else (255, 255, 255),
+              font=font_big)
 
     # rep counter (top-right)
     rep_txt = f"REPS {credited}"

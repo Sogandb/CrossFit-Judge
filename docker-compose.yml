@@ -1,0 +1,51 @@
+name: crossfit-judge
+# CrossFit Judge — test deployment (web + engine)
+#   cp .env.example .env   # edit ACCESS_PASSWORD at least
+#   docker compose up -d --build
+#   open http://<server>:8080
+services:
+  engine:
+    build: ./mini-services/crossfit-judge
+    image: crossfit-judge-engine:test
+    restart: unless-stopped
+    environment:
+      JUDGE_STATE_DIR: /state
+      JUDGE_WORKERS: ${JUDGE_WORKERS:-1}            # parallel analyses (each uses ~1 CPU core + ~1-2 GB RAM)
+      JUDGE_EASE: ${JUDGE_EASE:-0.5}                # leniency knob (0 = strict rulebook, 1 = very lenient)
+      JUDGE_RETENTION_DAYS: ${JUDGE_RETENTION_DAYS:-30}
+      JUDGE_MAX_UPLOAD_BYTES: ${JUDGE_MAX_UPLOAD_BYTES:-524288000}   # 500 MB
+      JUDGE_USE_BEEP: ${JUDGE_USE_BEEP:-0}
+      JUDGE_ANNOTATE: ${JUDGE_ANNOTATE:-1}
+    volumes:
+      - judge_state:/state           # uploads, review videos, results DB
+    expose:
+      - "8001"                       # internal only — NOT published to the host
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8001/api/health | grep -q '\"deps_ok\":true'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: json-file
+      options: { max-size: "20m", max-file: "5" }
+
+  web:
+    build: .
+    image: crossfit-judge-web:test
+    restart: unless-stopped
+    depends_on:
+      engine:
+        condition: service_healthy
+    environment:
+      JUDGE_ENGINE_URL: http://engine:8001
+      ACCESS_USER: ${ACCESS_USER:-}          # optional HTTP Basic auth for the whole site
+      ACCESS_PASSWORD: ${ACCESS_PASSWORD:-}
+    ports:
+      - "${WEB_BIND:-0.0.0.0}:${WEB_PORT:-8080}:3000"
+    logging:
+      driver: json-file
+      options: { max-size: "20m", max-file: "5" }
+
+volumes:
+  judge_state:

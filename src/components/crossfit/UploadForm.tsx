@@ -1,11 +1,9 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
@@ -13,9 +11,10 @@ import {
   SelectLabel, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Upload, FileVideo, X } from "lucide-react";
+import { UploadCloud, FileVideo, X } from "lucide-react";
 import type { Division } from "./types";
-import { toFa } from "@/lib/fa";
+import { useLang } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
 export interface SubmitPayload {
   file: File;
@@ -32,19 +31,27 @@ interface Props {
   grouped: Record<string, Division[]>;
   weightsVerified: boolean;
   onSubmit: (p: SubmitPayload, onProgress: (pct: number) => void) => Promise<void>;
+  onCancelUpload?: () => void;
   disabled?: boolean;
 }
 
-export function UploadForm({ grouped, weightsVerified, onSubmit, disabled }: Props) {
+type TimeMode = "time" | "capped" | "none";
+
+const MAX_UPLOAD_MB = 500;   // Wodx: videos up to 500 MB
+const MAX_VIDEO_MIN = 15;    // ... and 15 minutes
+
+export function UploadForm({ grouped, weightsVerified, onSubmit, onCancelUpload, disabled }: Props) {
+  const { t } = useLang();
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [division, setDivision] = useState<string>("");
   const [athleteName, setAthleteName] = useState("");
   const [claimedReps, setClaimedReps] = useState("");
-  const [timeMode, setTimeMode] = useState<"time" | "capped" | "none">("time");
+  const [timeMode, setTimeMode] = useState<TimeMode>("time");
   const [claimMin, setClaimMin] = useState("");
   const [claimSec, setClaimSec] = useState("");
-  const [manualStart, setManualStart] = useState("");
+  const [manualStartMin, setManualStartMin] = useState("");
+  const [manualStartSec, setManualStartSec] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadPct, setUploadPct] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -52,24 +59,52 @@ export function UploadForm({ grouped, weightsVerified, onSubmit, disabled }: Pro
   const pickFile = useCallback((f: File | null) => {
     if (!f) return;
     if (!/\.(mp4|mov|m4v|webm|mkv)$/i.test(f.name)) {
-      toast({ title: "فرمت مجاز نیست", description: "فقط MP4 / MOV / WebM", variant: "destructive" });
+      toast({ title: t("form.errFile"), variant: "destructive" });
+      return;
+    }
+    if (f.size > MAX_UPLOAD_MB * 1024 * 1024) {
+      toast({
+        title: t("form.errSize"),
+        description: `${(f.size / 1048576).toFixed(0)} MB > ${MAX_UPLOAD_MB} MB`,
+        variant: "destructive",
+      });
       return;
     }
     setFile(f);
-  }, []);
+    // Best-effort duration check (browsers that cannot decode the codec just
+    // skip it; the server re-validates authoritatively).
+    try {
+      const url = URL.createObjectURL(f);
+      const v = document.createElement("video");
+      v.preload = "metadata";
+      v.onloadedmetadata = () => {
+        URL.revokeObjectURL(url);
+        if (isFinite(v.duration) && v.duration > MAX_VIDEO_MIN * 60 + 1) {
+          setFile(null);
+          toast({
+            title: t("form.errDuration"),
+            description: `${(v.duration / 60).toFixed(1)} min > ${MAX_VIDEO_MIN} min`,
+            variant: "destructive",
+          });
+        }
+      };
+      v.onerror = () => URL.revokeObjectURL(url);
+      v.src = url;
+    } catch { /* ignore */ }
+  }, [t]);
 
   const submit = async () => {
     if (!file) {
-      toast({ title: "ویدیو انتخاب نشده است", variant: "destructive" });
+      toast({ title: t("form.errFile"), variant: "destructive" });
       return;
     }
     if (!division) {
-      toast({ title: "رده سنی را انتخاب کنید", variant: "destructive" });
+      toast({ title: t("form.errDivision"), variant: "destructive" });
       return;
     }
     const reps = claimedReps.trim() === "" ? null : Number(claimedReps);
     if (reps != null && (Number.isNaN(reps) || reps < 0 || reps > 126)) {
-      toast({ title: "تعداد رپ ادعایی نامعتبر است", variant: "destructive" });
+      toast({ title: t("form.errReps"), variant: "destructive" });
       return;
     }
     let timeSec: number | null = null;
@@ -77,21 +112,25 @@ export function UploadForm({ grouped, weightsVerified, onSubmit, disabled }: Pro
       const m = Number(claimMin || 0);
       const s = Number(claimSec || 0);
       if (Number.isNaN(m) || Number.isNaN(s) || m * 60 + s <= 0) {
-        toast({ title: "زمان ادعایی را درست وارد کنید", variant: "destructive" });
+        toast({ title: t("form.errTime"), variant: "destructive" });
         return;
       }
       timeSec = m * 60 + s;
     }
-    const ms = manualStart.trim() === "" ? null : Number(manualStart);
-    if (ms != null && (Number.isNaN(ms) || ms < 0)) {
-      toast({ title: "لحظه شروع ویدیو (ثانیه) نامعتبر است", variant: "destructive" });
+    const mMin = Number(manualStartMin || 0);
+    const mSec = Number(manualStartSec || 0);
+    const ms = (manualStartMin.trim() === "" && manualStartSec.trim() === "")
+      ? null
+      : mMin * 60 + mSec;
+    if (ms != null && (Number.isNaN(mMin) || Number.isNaN(mSec) || ms < 0)) {
+      toast({ title: t("form.errManualStart"), variant: "destructive" });
       return;
     }
     setUploading(true);
     setUploadPct(0);
     try {
       const label =
-        Object.values(grouped).flat().find((d) => d.id === division)?.label_fa || division;
+        Object.values(grouped).flat().find((d) => d.id === division)?.label_en || division;
       await onSubmit(
         {
           file, division, divisionLabel: label, athleteName,
@@ -104,7 +143,7 @@ export function UploadForm({ grouped, weightsVerified, onSubmit, disabled }: Pro
       );
     } catch (e) {
       toast({
-        title: "خطا در ارسال",
+        title: t("form.uploadFailed"),
         description: e instanceof Error ? e.message : String(e),
         variant: "destructive",
       });
@@ -114,174 +153,248 @@ export function UploadForm({ grouped, weightsVerified, onSubmit, disabled }: Pro
   };
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-xl font-bold">ارسال ویدیو برای داوری</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          ویدیوی حداکثر {toFa(15)} دقیقه‌ای واد را همراه با امتیاز ادعایی خود ارسال کنید.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        {/* video picker */}
-        <div>
-          <Label>فایل ویدیو</Label>
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => inputRef.current?.click()}
-            onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={(e) => {
-              e.preventDefault(); setDragOver(false);
-              pickFile(e.dataTransfer.files?.[0] || null);
-            }}
-            className={`mt-1.5 flex min-h-28 cursor-pointer flex-col items-center justify-center
-              gap-2 rounded-lg border-2 border-dashed p-6 text-center transition-colors
-              ${dragOver ? "border-red-600 bg-red-50" : "border-zinc-300 hover:border-red-500/60"}`}
-          >
-            {file ? (
-              <>
-                <FileVideo className="h-8 w-8 text-red-600" />
-                <div className="font-medium">{file.name}</div>
-                <div className="text-xs text-muted-foreground">
-                  {(file.size / 1024 / 1024).toFixed(1)} مگابایت
-                  {" • "}
-                  <button
-                    className="text-red-600 underline"
-                    onClick={(e) => { e.stopPropagation(); setFile(null); }}
-                  >حذف</button>
-                </div>
-              </>
-            ) : (
-              <>
-                <Upload className="h-8 w-8 text-muted-foreground" />
-                <div className="font-medium">ویدیو را اینجا رها کنید یا کلیک کنید</div>
-                <div className="text-xs text-muted-foreground">MP4 / MOV / WebM — حداکثر ۱۵ دقیقه</div>
-              </>
-            )}
-          </div>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="video/mp4,video/quicktime,video/webm,video/x-matroska"
-            className="hidden"
-            onChange={(e) => pickFile(e.target.files?.[0] || null)}
+    <div className="space-y-5">
+      {/* v1 uploader heading */}
+      <div className="flex flex-wrap items-center gap-2">
+        <UploadCloud className="h-4 w-4 text-brand" />
+        <h3 className="text-sm font-semibold text-ink">{t("form.uploadTitle")}</h3>
+        <span className="text-xs text-ink-3">
+          for <span className="text-ink-2">Thruster &amp; Bar-Facing Burpee Ladder</span>
+        </span>
+      </div>
+
+      {/* v1 dropzone */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label={t("form.dropHere")}
+        onClick={() => !disabled && !uploading && inputRef.current?.click()}
+        onKeyDown={(e) => e.key === "Enter" && !disabled && !uploading && inputRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); if (!disabled && !uploading) setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          if (!disabled && !uploading) pickFile(e.dataTransfer.files?.[0] || null);
+        }}
+        className={cn(
+          "relative min-h-[180px] flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-8 text-center transition-all cursor-pointer",
+          dragOver
+            ? "border-brand bg-brand/10"
+            : "border-edge-2 bg-panel-2/50 hover:border-ink-4",
+          (disabled || uploading) && "opacity-60 cursor-not-allowed",
+        )}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept="video/mp4,video/quicktime,video/webm,video/x-matroska"
+          className="hidden"
+          onChange={(e) => pickFile(e.target.files?.[0] || null)}
+        />
+        {file ? (
+          <>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/15">
+              <FileVideo className="h-6 w-6 text-emerald-500" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-ink">{file.name}</p>
+              <p className="text-xs text-ink-3">
+                {(file.size / 1024 / 1024).toFixed(1)} MB
+                {" — "}
+                <button
+                  className="text-brand-fg underline underline-offset-2"
+                  onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                >
+                  {t("form.remove")}
+                </button>
+              </p>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-chip">
+              <UploadCloud className="h-6 w-6 text-ink-3" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-ink-2">{t("form.dropHere")}</p>
+              <p className="text-xs text-ink-3">{t("form.dropHint")}</p>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* division */}
+      <div className="space-y-1.5">
+        <Label className="text-xs font-semibold text-ink-2">{t("form.division")}</Label>
+        <Select value={division} onValueChange={setDivision} disabled={disabled || uploading}>
+          <SelectTrigger className="w-full bg-panel">
+            <SelectValue placeholder={t("form.divisionPlaceholder")} />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(grouped).map(([group, items]) => (
+              <SelectGroup key={group}>
+                <SelectLabel>{group}</SelectLabel>
+                {items.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.label_en}
+                    {d.weight_kg != null && (
+                      <span className="text-xs text-muted-foreground">
+                        {" "}({d.weight_kg} kg)
+                      </span>
+                    )}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            ))}
+          </SelectContent>
+        </Select>
+        {!weightsVerified && (
+          <p className="text-xs text-amber-500">{t("form.weightsNote")}</p>
+        )}
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="athlete" className="text-xs font-semibold text-ink-2">
+            {t("form.athlete")}
+          </Label>
+          <Input
+            id="athlete"
+            className="bg-panel"
+            value={athleteName}
+            onChange={(e) => setAthleteName(e.target.value)}
+            placeholder={t("form.athletePlaceholder")}
           />
         </div>
-
-        {/* division */}
-        <div>
-          <Label>رده سنی / جنسیت</Label>
-          <Select value={division} onValueChange={setDivision}>
-            <SelectTrigger className="mt-1.5 w-full">
-              <SelectValue placeholder="رده خود را انتخاب کنید" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(grouped).map(([group, items]) => (
-                <SelectGroup key={group}>
-                  <SelectLabel>{group}</SelectLabel>
-                  {items.map((d) => (
-                    <SelectItem key={d.id} value={d.id}>
-                      {d.label_fa}
-                      {d.weight_kg != null && (
-                        <span className="text-xs text-muted-foreground">
-                          {" "}({toFa(d.weight_kg)} کیلوگرم)
-                        </span>
-                      )}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              ))}
-            </SelectContent>
-          </Select>
-          {!weightsVerified && (
-            <p className="mt-1 text-xs text-amber-600">
-              وزن میله‌ها پیش‌فرض است و منتظر تأیید رسمی وادکس.
-            </p>
-          )}
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <Label htmlFor="athlete">نام ورزشکار (اختیاری)</Label>
-            <Input id="athlete" className="mt-1.5" value={athleteName}
-              onChange={(e) => setAthleteName(e.target.value)}
-              placeholder="مثلاً: علی رضایی" />
-          </div>
-          <div>
-            <Label htmlFor="reps">رپ‌های شمرده‌شده توسط خودم</Label>
-            <Input id="reps" className="mt-1.5" inputMode="numeric"
-              value={claimedReps} onChange={(e) => setClaimedReps(e.target.value)}
-              placeholder="مثلاً: 126" />
-          </div>
-        </div>
-
-        {/* time claim */}
-        <div>
-          <Label>وضعیت زمانی من</Label>
-          <RadioGroup
-            value={timeMode}
-            onValueChange={(v) => setTimeMode(v as typeof timeMode)}
-            className="mt-2 flex flex-wrap gap-4"
-          >
-            <label className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm">
-              <RadioGroupItem value="time" /> وادی را زیر زمان مجاز تمام کردم
-            </label>
-            <label className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm">
-              <RadioGroupItem value="capped" /> در زمان مجاز تمام نشد (کپ)
-            </label>
-            <label className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm">
-              <RadioGroupItem value="none" /> فعلاً نمی‌گویم
-            </label>
-          </RadioGroup>
-          {timeMode === "time" && (
-            <div className="mt-2 flex items-center gap-2">
-              <Input className="w-24" inputMode="numeric" placeholder="دقیقه"
-                value={claimMin} onChange={(e) => setClaimMin(e.target.value)} />
-              <span className="text-muted-foreground">:</span>
-              <Input className="w-24" inputMode="numeric" placeholder="ثانیه"
-                value={claimSec} onChange={(e) => setClaimSec(e.target.value)} />
-              <span className="text-xs text-muted-foreground">زمان پایان من</span>
-            </div>
-          )}
-        </div>
-
-        <div>
-          <Label htmlFor="mstart" className="flex items-center gap-1">
-            لحظه شروع وادی در ویدیو (اختیاری)
+        <div className="space-y-1.5">
+          <Label htmlFor="reps" className="text-xs font-semibold text-ink-2">
+            {t("form.claimedReps")}
           </Label>
-          <Input id="mstart" className="mt-1.5 w-40" inputMode="numeric"
-            value={manualStart} onChange={(e) => setManualStart(e.target.value)}
-            placeholder="ثانیه؛ خالی = خودکار" />
-          <p className="mt-1 text-xs text-muted-foreground">
-            اگر خالی بمانید، سیستم با تشخیص بوق ۳+۱ تایمر، لحظه شروع را پیدا می‌کند.
-          </p>
+          <Input
+            id="reps"
+            className="bg-panel"
+            inputMode="numeric"
+            value={claimedReps}
+            onChange={(e) => setClaimedReps(e.target.value)}
+            placeholder={t("form.claimedRepsPlaceholder")}
+          />
         </div>
+      </div>
 
-        {uploading && (
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-sm">
-              <span>در حال آپلود…</span>
-              <span>{toFa(uploadPct)}%</span>
-            </div>
-            <Progress value={uploadPct} className="h-2" />
+      {/* time claim */}
+      <div className="space-y-2">
+        <Label className="text-xs font-semibold text-ink-2">{t("form.timeClaim")}</Label>
+        <RadioGroup
+          value={timeMode}
+          onValueChange={(v) => setTimeMode(v as TimeMode)}
+          className="grid gap-2 sm:grid-cols-3"
+        >
+          {(["time", "capped", "none"] as const).map((mode) => (
+            <label
+              key={mode}
+              className={cn(
+                "flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2.5 text-[13px] transition-all",
+                timeMode === mode
+                  ? "border-brand bg-brand/10 text-ink"
+                  : "border-edge bg-panel text-ink-2 hover:border-edge-2",
+              )}
+            >
+              <RadioGroupItem value={mode} />
+              {t(mode === "time" ? "form.timeFinished" : mode === "capped" ? "form.timeCapped" : "form.timeNone")}
+            </label>
+          ))}
+        </RadioGroup>
+        {timeMode === "time" && (
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <Input
+              className="w-24 bg-panel text-center tabular-nums"
+              inputMode="numeric"
+              placeholder={t("form.minutes")}
+              aria-label={t("form.minutes")}
+              value={claimMin}
+              onChange={(e) => setClaimMin(e.target.value)}
+            />
+            <span className="text-ink-3">:</span>
+            <Input
+              className="w-24 bg-panel text-center tabular-nums"
+              inputMode="numeric"
+              placeholder={t("form.seconds")}
+              aria-label={t("form.seconds")}
+              value={claimSec}
+              onChange={(e) => setClaimSec(e.target.value)}
+            />
           </div>
         )}
+      </div>
 
-        <div className="flex items-center gap-3">
-          <Button size="lg" className="bg-red-600 hover:bg-red-700"
-            onClick={submit} disabled={disabled || uploading || !file || !division}>
-            {uploading ? "در حال ارسال…" : "شروع تحلیل"}
-          </Button>
-          {file && (
-            <Badge variant="outline" className="gap-1">
-              <X className="h-3 w-3" /> {file.name.slice(0, 24)}
-              {file.name.length > 24 ? "…" : ""}
-            </Badge>
+      {/* manual start */}
+      <div className="space-y-1.5">
+        <Label htmlFor="mstart-m" className="text-xs font-semibold text-ink-2">
+          {t("form.manualStart")}
+        </Label>
+        <div className="flex items-center gap-2">
+          <Input
+            id="mstart-m"
+            className="w-20 bg-panel text-center tabular-nums"
+            inputMode="numeric"
+            value={manualStartMin}
+            onChange={(e) => setManualStartMin(e.target.value.replace(/\D/g, "").slice(0, 2))}
+            placeholder="mm"
+            aria-label={t("form.minutes")}
+          />
+          <span className="text-ink-3">:</span>
+          <Input
+            id="mstart-s"
+            className="w-20 bg-panel text-center tabular-nums"
+            inputMode="numeric"
+            value={manualStartSec}
+            onChange={(e) => setManualStartSec(e.target.value.replace(/\D/g, "").slice(0, 2))}
+            placeholder="ss"
+            aria-label={t("form.seconds")}
+          />
+        </div>
+        <p className="text-xs text-ink-3">{t("form.manualStartHint")}</p>
+      </div>
+
+      {uploading && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs text-ink-3">
+            <span>{t("proc.uploadingLabel")}</span>
+            <span className="tabular-nums">
+              {uploadPct}%{file ? ` · ${((uploadPct / 100) * file.size / 1048576).toFixed(1)} / ${(file.size / 1048576).toFixed(1)} MB` : ""}
+            </span>
+          </div>
+          <Progress value={uploadPct} className="h-2" />
+          <p className="text-[11px] leading-relaxed text-ink-4">
+            {t("proc.uploadChunkHint")}
+          </p>
+          {onCancelUpload && (
+            <Button
+              onClick={onCancelUpload}
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs"
+            >
+              <X className="h-3.5 w-3.5" />
+              {t("proc.cancel")}
+            </Button>
           )}
         </div>
-      </CardContent>
-    </Card>
+      )}
+
+      <Button
+        size="lg"
+        className="w-full gap-2 bg-brand text-white hover:bg-brand/90 sm:w-auto"
+        onClick={submit}
+        disabled={disabled || uploading || !file || !division}
+      >
+        {uploading ? (
+          <><span className="h-4 w-4 animate-pulse" />{t("form.submitting")}</>
+        ) : (
+          <><UploadCloud className="h-4 w-4" />{t("form.start")}</>
+        )}
+      </Button>
+    </div>
   );
 }

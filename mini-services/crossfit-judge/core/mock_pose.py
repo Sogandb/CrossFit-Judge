@@ -166,18 +166,28 @@ def pose_frame(points: dict[str, Point], t: float, idx: int,
 def gen_thruster_rep(out: list, t0: float, x: float, gy: float, H: float,
                      idx0: int, fps: float = 30.0,
                      depth_h: float = 0.035,
-                     lockout: bool = True,
+                     lockout: bool | float = True,
                      overhead: bool = True,
                      jerk: bool = False,
                      walk_h: float = 0.0,
                      entry: str = "rack",
                      wrist_to_knees: bool = False,
                      end_mode: str = "rack") -> float:
-    """Emit one thruster rep; returns the end time."""
+    """Emit one thruster rep; returns the end time.
+
+    lockout: True → 176° (clear) · False → 140° (borderline band) ·
+             a number → that exact elbow angle at lockout.
+    """
     sb = SkeletonBuilder(x, gy, H)
     dt = 1.0 / fps
     t = t0
     idx = idx0
+    if lockout is True:
+        lock_elbow = 176.0
+    elif lockout is False:
+        lock_elbow = 140.0     # borderline band (138-158): credit + review
+    else:
+        lock_elbow = float(lockout)
     knee_y = gy - 0.26 * H
     hip_bottom = knee_y + depth_h * H
     hip_top = gy - 0.50 * H
@@ -239,8 +249,8 @@ def gen_thruster_rep(out: list, t0: float, x: float, gy: float, H: float,
                  sh_y=_lerp(hip_bottom - 0.32 * H, hip_top - 0.32 * H, _ease(u)),
                  knee_y=knee_y, ankle_y=gy, wrist_mode="rack",
                  body_x_offset=walk_dx)
-        emit_many(16, hip_y=hip_top, sh_y=hip_top - 0.32 * H, knee_y=knee_y,
-                  ankle_y=gy, wrist_mode="rack", body_x_offset=walk_dx)  # PAUSE
+        emit_many(22, hip_y=hip_top, sh_y=hip_top - 0.32 * H, knee_y=knee_y,
+                  ankle_y=gy, wrist_mode="rack", body_x_offset=walk_dx)  # PAUSE ≥0.7s
         # re-dip and jerk the bar overhead
         for u in np_linspace(0, 1, 6):
             emit(hip_y=_lerp(hip_top, hip_top + 0.06 * H, u),
@@ -267,18 +277,22 @@ def gen_thruster_rep(out: list, t0: float, x: float, gy: float, H: float,
                      wrist_mode="rack", body_x_offset=walk_dx * u)
             else:
                 wu = (u - 0.55) / 0.45
-                wy = _lerp(sh_y + 0.015 * H,
-                           nose_y - (0.10 * H if overhead else -0.05 * H),
-                           _ease(wu))
+                # overhead=True → bar well above the head;
+                # overhead=False → bar parked at the CHEST (clearly below
+                # the shoulders — a real "never went up" fault)
+                wy = (_lerp(sh_y + 0.015 * H,
+                            nose_y - 0.10 * H, _ease(wu))
+                      if overhead else sh_y + 0.06 * H)
                 emit(hip_y=hip_y, sh_y=sh_y, knee_y=knee_y, ankle_y=gy,
-                     wrist_mode="overhead", wrist_y=wy,
-                     overhead_elbow_deg=176.0 if lockout else 140.0,
+                     wrist_mode="overhead" if overhead else "rack",
+                     wrist_y=wy,
+                     overhead_elbow_deg=lock_elbow,
                      body_x_offset=walk_dx * u)
         # lockout hold
         emit_many(8, hip_y=hip_top, sh_y=hip_top - 0.32 * H, knee_y=knee_y,
-                  ankle_y=gy, wrist_mode="overhead",
-                  wrist_y=nose_y - (0.10 * H if overhead else -0.05 * H),
-                  overhead_elbow_deg=176.0 if lockout else 140.0,
+                  ankle_y=gy, wrist_mode="overhead" if overhead else "rack",
+                  wrist_y=(nose_y - 0.10 * H) if overhead else hip_top - 0.32 * H + 0.06 * H,
+                  overhead_elbow_deg=lock_elbow if overhead else None,
                   body_x_offset=walk_dx)
     # ---- exit ----
     if end_mode == "drop":
@@ -291,6 +305,9 @@ def gen_thruster_rep(out: list, t0: float, x: float, gy: float, H: float,
         for u in np_linspace(0, 1, 8):
             emit(hip_y=hip_top, sh_y=hip_top - 0.32 * H, knee_y=knee_y,
                  ankle_y=gy, wrist_mode="rack", body_x_offset=walk_dx)
+        # long settle at the rack so the FSM's stand-rack pause debounce fires
+        emit_many(16, hip_y=hip_top, sh_y=hip_top - 0.32 * H, knee_y=knee_y,
+                  ankle_y=gy, wrist_mode="rack", body_x_offset=walk_dx)
     return t
 
 
@@ -299,8 +316,8 @@ def gen_thruster_rep(out: list, t0: float, x: float, gy: float, H: float,
 # --------------------------------------------------------------------------- #
 def gen_bfb_rep(out: list, t0: float, x: float, gy: float, H: float,
                 idx0: int, bar_x: float, fps: float = 30.0,
-                chest_touch: bool = True,
-                facing: bool = True,
+                chest_touch: bool | float = True,
+                facing: bool | float = True,
                 landing_mode: str = "two",
                 #  "two"            — two-foot takeoff & landing (default)
                 #  "stagger_takeoff" — legal one-foot takeoff, simultaneous landing
@@ -312,6 +329,11 @@ def gen_bfb_rep(out: list, t0: float, x: float, gy: float, H: float,
 
     The athlete starts at x (on one side of the bar), does a burpee and
     jumps over to the other side. Bar sits at bar_x on the ground.
+
+    chest_touch: True → 0.02H above floor · False → 0.13H (borderline
+                 band, credited with review) · a number → that exact stern
+                 height above the floor (×H).
+    facing:      True → tilt 0° · False → 55° (borderline) · a number → that tilt.
     """
     sb = SkeletonBuilder(x, gy, H)
     dt = 1.0 / fps
@@ -338,8 +360,18 @@ def gen_bfb_rep(out: list, t0: float, x: float, gy: float, H: float,
     # ---- stand facing the bar (shoulders horizontal → tilt ≈ 0) ----
     emit_many(5, hip_y=hip_top, knee_y=knee_y, ankle_y=gy, wrist_mode="hang")
     # ---- descent to the floor ----
-    tilt = 0.0 if facing else 55.0
-    stern_floor = gy - 0.02 * H if chest_touch else gy - 0.13 * H
+    if facing is True:
+        tilt = 0.0
+    elif facing is False:
+        tilt = 55.0      # borderline band (42-68): credited with review flag
+    else:
+        tilt = float(facing)
+    if chest_touch is True:
+        stern_floor = gy - 0.02 * H
+    elif chest_touch is False:
+        stern_floor = gy - 0.13 * H   # borderline band (0.20-0.30H)
+    else:
+        stern_floor = gy - float(chest_touch) * H
     for u in np_linspace(0, 1, 22):
         su = _ease(u)
         sh_y = _lerp(gy - 0.82 * H, stern_floor, su)
@@ -396,18 +428,20 @@ def gen_bfb_rep(out: list, t0: float, x: float, gy: float, H: float,
         emit_stand(land_x)
     elif landing_mode == "stagger_landing":
         # both lift together; L lands at the end of the arc while R is STILL
-        # AIRBORNE, then R drops ~0.30 s later (one-foot landing fault)
+        # AIRBORNE, then R drops ~0.40 s later (clear one-foot landing fault)
         for i in range(n_arc):
             u = i / (n_arc - 1)
             fy, fx = arc_y(u), _lerp(x, land_x, _ease(u))
             emit(hip_y=hip_top, sh_y=gy - 0.80 * H, knee_y=knee_y,
                  wrist_mode="hang", foot_y=(fy, gy - 0.16 * H),
                  foot_x=(fx - 0.06 * H, _lerp(x, land_x, 0.85) + 0.06 * H))
-        # L down at land_x; R descends late
-        for i in range(int(0.30 * fps)):
+        # L down at land_x; R hovers then descends late (clear fault)
+        for i in range(int(0.70 * fps)):
+            u = i / max(1, int(0.70 * fps) - 1)
+            hover = 0.16 if u < 0.5 else (0.16 * (1 - (u - 0.5) * 2))
             emit(hip_y=hip_top, sh_y=gy - 0.80 * H, knee_y=knee_y,
                  wrist_mode="hang",
-                 foot_y=(gy, gy - 0.16 * H + (0.16 * H) * (i / max(1, int(0.30 * fps) - 1))),
+                 foot_y=(gy, gy - hover * H),
                  foot_x=(land_x - 0.05 * H, _lerp(x, land_x, 0.9) + 0.06 * H))
         emit_stand(land_x)
     else:  # "trailing": lead (L) crosses & lands while R stays grounded
@@ -431,7 +465,10 @@ def gen_bfb_rep(out: list, t0: float, x: float, gy: float, H: float,
                  foot_x=(land_x - 0.05 * H, fx + 0.06 * H))
         emit_stand(land_x)
     # ---- stand on the far side ----
-    emit_many(4, hip_y=hip_top, sh_y=gy - 0.80 * H, knee_y=knee_y, ankle_y=gy,
+    # (no-cross reps stand LONG on the same side — the FSM's 0.6s settle
+    # timer must fire to judge the incomplete crossing)
+    emit_many(24 if not cross else 4, hip_y=hip_top, sh_y=gy - 0.80 * H,
+              knee_y=knee_y, ankle_y=gy,
               ankle_x_offset=land_x - x, wrist_mode="hang")
     return t
 

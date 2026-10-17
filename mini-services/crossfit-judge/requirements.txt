@@ -1,10 +1,10 @@
-fastapi>=0.110
-uvicorn[standard]>=0.29
-python-multipart>=0.0.9
-mediapipe>=0.10.14
-opencv-python-headless>=4.9
-numpy>=1.26,<3
-scipy>=1.11
-Pillow>=10.0
-pytest>=8.0
-httpx>=0.27
+# Runtime dependencies — PINNED to the versions the test-suite was verified
+# against (Python 3.12). Update deliberately, run `pytest` after.
+fastapi==0.143.1
+uvicorn[standard]==0.54.0
+python-multipart==0.0.32
+mediapipe==1.1.1
+opencv-python-headless==5.0.0.93
+numpy==2.5.4
+scipy==1.18.1
+Pillow==12.3.0

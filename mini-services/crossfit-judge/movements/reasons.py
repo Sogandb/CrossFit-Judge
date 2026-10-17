@@ -37,6 +37,22 @@ REASONS: dict[str, dict] = {
         "fa": "قدم زدن رو به جلو در حین اجرای حرکت — خطا",
         "en": "Walking forward during the movement is a fault",
     },
+    # ---- borderline bands (credited, flagged for human review) ---- #
+    "THR_DEPTH_REVIEW": {
+        "category": "REVIEW",
+        "fa": "عمق اسکوات در حد مرز بود (چین لگن تقریباً هم‌سطح زانو) — به نفع ورزشکار شمرده شد؛ بازبینی توصیه می‌شود",
+        "en": "Squat depth was borderline (hip crease near the knee line) — credited to the athlete; review recommended",
+    },
+    "THR_LOCKOUT_REVIEW": {
+        "category": "REVIEW",
+        "fa": "کامل بودن قفل بالای حرکت از روی تصویر قابل اطمینان نبود — به نفع ورزشکار شمرده شد؛ بازبینی توصیه می‌شود",
+        "en": "Full overhead lockout could not be confirmed from the footage — credited to the athlete; review recommended",
+    },
+    "THR_WALKING_REVIEW": {
+        "category": "REVIEW",
+        "fa": "جابه‌جایی پاها در حین رپ دیده شد اما آشکارا قدم برداشتن نبود (بازبینی)",
+        "en": "Some foot movement seen during the rep but not clearly walking (review)",
+    },
     "THR_RACK_ELBOWS": {
         "category": "REVIEW",
         "fa": "وضعیت رک مشکوک است — آرنج‌ها باید جلوی میله باشند (نیازمند بازبینی)",
@@ -83,6 +99,37 @@ REASONS: dict[str, dict] = {
         "fa": "عبور کامل از بار انجام نشد — هر دو پا باید از آن‌طرف بار فرود بیایند",
         "en": "Incomplete crossing — both feet must land beyond the bar",
     },
+    "BFB_NO_JUMP": {
+        "category": "NO_REP",
+        "fa": "عبور از بار باید با پرش باشد — عبور قدمی مجاز نیست",
+        "en": "The bar must be cleared with a jump — stepping over is not allowed",
+    },
+    # ---- borderline bands (credited, flagged for human review) ---- #
+    "BFB_CHEST_REVIEW": {
+        "category": "REVIEW",
+        "fa": "لمس سینه زمین به‌طور قطعی قابل تأیید نبود — به نفع ورزشکار شمرده شد؛ بازبینی توصیه می‌شود",
+        "en": "Chest-to-ground contact could not be conclusively confirmed — credited to the athlete; review recommended",
+    },
+    "BFB_FACING_REVIEW": {
+        "category": "REVIEW",
+        "fa": "زاویه دوربین اجازه تأیید قطعی رو به بار بودن را نداد (بازبینی)",
+        "en": "Camera angle does not allow conclusive facing verification (review)",
+    },
+    "BFB_CROSS_REVIEW": {
+        "category": "REVIEW",
+        "fa": "عبور از بار در حد مرز بود — به نفع ورزشکار شمرده شد؛ بازبینی توصیه می‌شود",
+        "en": "Bar crossing was borderline — credited to the athlete; review recommended",
+    },
+    "BFB_LANDING_REVIEW": {
+        "category": "REVIEW",
+        "fa": "همزمانی فرود دو پا در حد مرز بود — به نفع ورزشکار شمرده شد (بازبینی)",
+        "en": "Two-foot landing simultaneity was borderline — credited to the athlete (review)",
+    },
+    "BFB_JUMP_REVIEW": {
+        "category": "REVIEW",
+        "fa": "پرش بودن عبور از بار به‌طور قطعی قابل تأیید نبود — به نفع ورزشکار شمرده شد (بازبینی)",
+        "en": "The jump over the bar could not be conclusively verified — credited to the athlete (review)",
+    },
     "BFB_BAR_CONTACT": {
         "category": "REVIEW",
         "fa": "احتمال تماس پا یا بدن با بار در حین پرش (نیازمند بازبینی)",
@@ -124,6 +171,36 @@ REASONS: dict[str, dict] = {
         "category": "REVIEW",
         "fa": "توالی حرکات با ترتیب واد مطابقت نداشت — بازبینی توصیه می‌شود",
         "en": "Movement order deviated from the prescribed WOD sequence — review recommended",
+    },
+    "SEQ_MOVEMENT_MISMATCH": {
+        "category": "REVIEW",
+        "fa": "این تلاش مربوط به حرکتی است که در این نقطه از واد منتظر نبود — شمرده نشد",
+        "en": "This attempt was of a movement not expected at this point of the WOD — not counted",
+    },
+    "SEQ_REALIGN_BACKWARD": {
+        "category": "REVIEW",
+        "fa": "سیستم توالی را با موقعیت واقعی ورزشکار هم‌راستا کرد (رندی که پیش‌تر ناقص مانده بود) — بازبینی توصیه می‌شود",
+        "en": "The engine re-aligned the sequence with the athlete's actual position (an earlier block was still incomplete) — review recommended",
+    },
+    "SEQ_SAME_MOVE_FLOW": {
+        "category": "REVIEW",
+        "fa": "ورزشکار همین حرکت را ادامه داد و رپ‌ها در رند بعدیِ همان حرکت منظور شد — بازبینی ترتیب توصیه می‌شود",
+        "en": "The athlete continued the same movement — reps were credited to the next round of that movement; order review recommended",
+    },
+    "SEQ_SLOTS_NOT_DETECTED": {
+        "category": "REVIEW",
+        "fa": "تعدادی رپ در این بخش توسط دوربین/تشخیص دیده نشد — شماره‌های آن‌ها در جدول با وضعیت «تشخیص داده نشد» آمده و امتیازی برای آن‌ها ثبت نشد (بدون حدس زدن)",
+        "en": "Some reps in this segment were not seen by detection — their numbers appear as 'not detected' in the ladder with no verdict invented for them",
+    },
+    "SEQ_TIME_CAP": {
+        "category": "INFO",
+        "fa": "زمان مجاز واد به پایان رسید — تلاش‌های بعد از آن شمرده نشدند",
+        "en": "The WOD time cap was reached — later attempts were not counted",
+    },
+    "SYS_CAP_UNKNOWN_START": {
+        "category": "INFO",
+        "fa": "چون شروع واد پیدا نشد، محدودیت زمانی ۱۰ دقیقه قابل اعمال دقیق نیست و اعمال نشد — همه تلاش‌های ویدیو شمرده شدند",
+        "en": "The workout start could not be detected, so the 10-minute cap cannot be applied fairly and was NOT enforced — all attempts in the video were counted",
     },
 }
 

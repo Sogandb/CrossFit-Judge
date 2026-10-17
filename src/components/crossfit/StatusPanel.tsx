@@ -1,101 +1,132 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CheckCircle2, Loader2, UploadCloud, X } from "lucide-react";
 import type { JobInfo } from "./types";
-import { toFa } from "@/lib/fa";
+import { useLang } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
-const STEPS = [
-  { key: "queue", label: "در صف" },
-  { key: "validate", label: "اعتبارسنجی" },
-  { key: "start", label: "تشخیص شروع" },
-  { key: "analyze", label: "تحلیل فریم‌ها" },
-  { key: "score", label: "امتیازدهی" },
-  { key: "done", label: "آماده" },
-];
+/** v1 ProcessingPanel — upload/analyze progress with the red→orange bar. */
+
+const PIPELINE = ["queued", "validate", "start_detect", "analyzing", "scoring", "done"] as const;
+
+// transient engine stages map onto the compact pipeline above
+const ALIASES: Record<string, string> = {
+  calibration: "analyzing",
+  waiting_athlete: "analyzing",
+  review_video: "scoring",
+  running: "queued",
+};
 
 function stageIndex(job: JobInfo | null): number {
   if (!job) return 0;
-  if (job.status === "failed") return 5;
-  if (job.status === "done") return 5;
-  const s = job.stage_fa || "";
-  if (s.includes("صف")) return 0;
-  if (s.includes("اعتبارسنجی")) return 1;
-  if (s.includes("شروع")) return 2;
-  if (s.includes("فریم") || s.includes("ورزشکار")) return 3;
-  if (s.includes("امتیاز") || s.includes("بازبینی")) return 4;
-  return 3;
+  if (job.status === "done") return PIPELINE.length - 1;
+  const key = job.stage_key || "queued";
+  const mapped = ALIASES[key] ?? key;
+  const i = PIPELINE.indexOf(mapped as (typeof PIPELINE)[number]);
+  return i < 0 ? 3 : i; // default to "analyzing"
 }
 
 interface Props {
+  phase: "uploading" | "processing";
   job: JobInfo | null;
-  resultReady: boolean;
+  uploadPct: number;
+  /** The analysis engine is self-repairing after a server restart — the
+   *  upload will start automatically once it is ready (typically < 2 min). */
+  engineWarming?: boolean;
+  onCancel: () => void;
 }
 
-export function StatusPanel({ job, resultReady }: Props) {
+export function StatusPanel({ phase, job, uploadPct, engineWarming, onCancel }: Props) {
+  const { t, lang } = useLang();
+  const isUploading = phase === "uploading";
+  const warming = !!engineWarming && isUploading;
+  const pct = isUploading ? uploadPct : Math.round(job?.progress ?? 0);
   const idx = stageIndex(job);
-  const failed = job?.status === "failed";
+
+  const stageText = job
+    ? (lang === "fa" ? job.stage_fa : job.stage_en) || t("proc.defaultMsg")
+    : t("proc.uploadSub");
+  const subtitle = warming ? t("proc.warming") : isUploading ? t("proc.uploadSub") : stageText;
+  const title = isUploading ? t("proc.uploading") : t("proc.analyzing");
+
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-xl font-bold">
-          {failed ? (
-            <XCircle className="h-5 w-5 text-red-600" />
-          ) : resultReady ? (
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
+    <div className="rounded-xl border border-edge bg-panel p-8 space-y-6 text-center">
+      <div className="flex justify-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand/10">
+          {isUploading ? (
+            <UploadCloud className="h-7 w-7 text-brand-fg animate-pulse" />
           ) : (
-            <Loader2 className="h-5 w-5 animate-spin text-red-600" />
+            <Loader2 className="h-7 w-7 text-brand-fg animate-spin" />
           )}
-          وضعیت تحلیل
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {failed ? (
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>تحلیل با خطا متوقف شد</AlertTitle>
-            <AlertDescription>{job?.error_fa}</AlertDescription>
-          </Alert>
-        ) : (
-          <>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {STEPS.map((s, i) => (
-                <span key={s.key} className="flex items-center gap-1.5">
-                  <Badge
-                    variant={i < idx ? "default" : i === idx ? "secondary" : "outline"}
-                    className={
-                      i < idx
-                        ? "bg-green-600 hover:bg-green-600"
-                        : i === idx
-                          ? "animate-pulse border-red-600/40 bg-red-50 text-red-700"
-                          : "text-muted-foreground"
-                    }
-                  >
-                    {s.label}
-                  </Badge>
-                  {i < STEPS.length - 1 && (
-                    <span className="text-muted-foreground">›</span>
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <h3 className="text-lg font-bold text-ink">{title}</h3>
+        <p className="text-sm text-ink-3">{subtitle}</p>
+      </div>
+
+      {/* progress bar — the v1 red→orange gradient */}
+      <div className="space-y-2">
+        <div className="h-2 rounded-full bg-chip overflow-hidden">
+          <div
+            className={cn(
+              "h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-300",
+              warming && "animate-pulse",
+            )}
+            style={{ width: `${Math.max(2, pct)}%` }}
+          />
+        </div>
+        <div className="flex items-center justify-between text-xs text-ink-3">
+          <span>{warming ? t("proc.warmingLabel") : isUploading ? t("proc.uploadingLabel") : subtitle}</span>
+          <span className="tabular-nums">{warming ? "—" : `${pct}%`}</span>
+        </div>
+      </div>
+
+      {/* pipeline stepper (v1 numbered-circles look, compact) */}
+      {!isUploading && (
+        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-2">
+          {PIPELINE.map((s, i) => (
+            <span key={s} className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5">
+                <span
+                  className={cn(
+                    "flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold transition-colors",
+                    i < idx
+                      ? "bg-emerald-500 text-white"
+                      : i === idx
+                        ? "bg-brand text-white animate-pulse"
+                        : "bg-chip text-ink-4",
                   )}
+                >
+                  {i < idx ? <CheckCircle2 className="h-3 w-3" /> : i + 1}
                 </span>
-              ))}
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>{job?.stage_fa || "در انتظار…"}</span>
-                <span>{toFa(Math.round(job?.progress || 0))}%</span>
-              </div>
-              <Progress value={job?.progress || 0} className="h-2" />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              تحلیل یک ویدیوی ۱۲ تا ۱۵ دقیقه‌ای روی سرور معمولی چند دقیقه طول می‌کشد؛
-              این صفحه خودکار به‌روز می‌شود.
-            </p>
-          </>
-        )}
-      </CardContent>
-    </Card>
+                <span
+                  className={cn(
+                    "text-[11px] font-medium",
+                    i === idx ? "text-ink" : "text-ink-4",
+                  )}
+                >
+                  {t(`stage.${s}`)}
+                </span>
+              </span>
+              {i < PIPELINE.length - 1 && (
+                <span className="text-ink-4 text-[10px]">›</span>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <Button onClick={onCancel} variant="outline" size="sm" className="gap-1.5 text-xs">
+        <X className="h-3.5 w-3.5" />
+        {t("proc.cancel")}
+      </Button>
+
+      {!isUploading && (
+        <p className="text-xs leading-relaxed text-ink-4">{t("proc.hint")}</p>
+      )}
+    </div>
   );
 }
