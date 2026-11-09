@@ -192,6 +192,16 @@ REASONS: dict[str, dict] = {
         "fa": "تعدادی رپ در این بخش توسط دوربین/تشخیص دیده نشد — شماره‌های آن‌ها در جدول با وضعیت «تشخیص داده نشد» آمده و امتیازی برای آن‌ها ثبت نشد (بدون حدس زدن)",
         "en": "Some reps in this segment were not seen by detection — their numbers appear as 'not detected' in the ladder with no verdict invented for them",
     },
+    "UNJUDGED_REVIEW": {
+        "category": "REVIEW",
+        "fa": "حرکت دیده شد ولی کیفیت اسکلت برای داوری دقیق کافی نبود — به نفع ورزشکار شمرده شد؛ لطفاً این تکرار را در ویدیو بازبینی کنید",
+        "en": "The rep was seen but pose quality was too low to judge precisely — credited in the athlete's favour; please re-check this rep in the video",
+    },
+    "SEQ_AMBIGUOUS_EVENT": {
+        "category": "REVIEW",
+        "fa": "یک پایین‌رفتن به زمین (نشستن/دراز کشیدن/خم‌شدن) بدون پرش از روی هالتر دیده شد؛ استراحت در نظر گرفته شد و تکرار حساب نشد",
+        "en": "A floor contact without crossing the bar was seen (sitting / lying / bending) — treated as rest and not counted as a rep",
+    },
     "SEQ_TIME_CAP": {
         "category": "INFO",
         "fa": "زمان مجاز واد به پایان رسید — تلاش‌های بعد از آن شمرده نشدند",

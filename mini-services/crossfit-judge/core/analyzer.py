@@ -8,6 +8,8 @@ timeline, drives the WOD sequencer and produces the final view-model.
 """
 from __future__ import annotations
 
+import os
+
 import traceback
 from dataclasses import dataclass
 from typing import Callable, Optional
@@ -28,6 +30,7 @@ from core.sequence import WodSequencer
 from core.types import PoseFrame, SceneModel
 from ingest.validate import validate_video
 from judging.scorer import final_overview, reconcile, score_display
+from core.aligned_engine import run_aligned
 from movements.bar_facing_burpee import BarFacingBurpeeFSM
 from movements.thruster import ThrusterFSM
 from audio.beep_detector import detect_start
@@ -134,9 +137,11 @@ class Analyzer:
         cache_path = self.meta.get("pose_cache")   # dev/validation replay
         if mock:
             blocks = self._wod_blocks_for_mock()
-            frames = gen_synthetic_workout(
-                blocks, faults=self.meta.get("mock_faults") or {},
-                lead_in_sec=t_start)
+            frames = self.meta.get("_mock_frames")      # tests: scenario-built stream
+            if frames is None:
+                frames = gen_synthetic_workout(
+                    blocks, faults=self.meta.get("mock_faults") or {},
+                    lead_in_sec=t_start)
             pose_source = _MockDetector(frames)
             frame_iter = _MockFrameIterator(frames)
             total_frames = len(frames)
@@ -162,12 +167,20 @@ class Analyzer:
                                  labels_en=MOVEMENT_LABELS_EN,
                                  cap_enforced=cap_enforced)
         fsms = [ThrusterFSM(), BarFacingBurpeeFSM()]
+        self._aligned = (str(self.meta.get("engine") or os.environ.get("JUDGE_ENGINE", "aligned"))
+                         .lower() != "online")
+        self._collected: list = []
 
         # ---------------- 5. frame loop ---------------- #
         try:
             self.progress("calibration", 10)
             self._frame_loop(frame_iter, pose_source, window_start, t_start,
                              scene, sequencer, fsms, total_frames)
+            if self._aligned:
+                self.progress("aligning", 94)
+                self._align_info = run_aligned(
+                    self._collected, scene, sequencer, t_start,
+                    (t_start + cap) if cap_enforced and cap else None, TARGET_FPS)
         finally:
             if src is not None:
                 try:
@@ -224,6 +237,8 @@ class Analyzer:
             "reconciliation": rec,
             "score_display": disp,
             "overview": overview,
+            "engine": {"mode": "aligned" if getattr(self, "_aligned", False) else "online",
+                       "alignment": getattr(self, "_align_info", None)},
             "events": events_d,
             "sequencer_flags": sequencer.flags,
             "warnings": warnings,
@@ -317,6 +332,8 @@ class Analyzer:
         # flush any attempt still open at stream end (with the REAL last
         # frame time — a synthetic huge t_end would falsely mark post-cap)
         last_t = getattr(self, "_last_frame_t", window_start)
+        if self._aligned:
+            return
         for fsm in fsms:
             fsm.force_close(last_t)
             tail = fsm.collect()
@@ -351,6 +368,9 @@ class Analyzer:
         online_ground_update(scene, pf, ground_samples)
         online_height_update(scene, pf, height_samples)
         self._track_bar(scene, pf, bar_candidates)
+        if self._aligned:
+            self._collected.append((t_abs, pf))   # judged offline after the full pass
+            return
         ctx = FrameContext(t=t_abs, frame_index=idx, pose=pf, scene=scene)
         sequencer.sync_fsms(fsms, t_abs)      # counter-driven: only the expected FSM(s) run
         for fsm in fsms:

@@ -36,7 +36,7 @@ WORKER_CONCURRENCY = int(os.environ.get("JUDGE_WORKERS", "2"))  # bounded pool (
 # --------------------------------------------------------------------------- #
 # Video ingest gates
 # --------------------------------------------------------------------------- #
-TARGET_FPS = 15.0            # analysis frame rate (CFR, fixes v1 VFR drift).
+TARGET_FPS = float(os.environ.get("JUDGE_FPS", "15"))  # 30 = ~2x slower, finer fast-rep timing            # analysis frame rate (CFR, fixes v1 VFR drift).
                               # 15 fps halves the pose-inference budget; all
                               # movement thresholds are TIME-based (ctx.t), so
                               # judging behavior is fps-agnostic by design.

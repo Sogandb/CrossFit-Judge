@@ -13,3 +13,4 @@ mini-services/crossfit-judge/data/uploads/
 mini-services/crossfit-judge/data/*.db*
 .pytest_cache/
 tsconfig.tsbuildinfo
+package-lock.json

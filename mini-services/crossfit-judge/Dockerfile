@@ -8,15 +8,15 @@ ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PIP_NO_CACHE_DIR=1 \
     JUDGE_STATE_DIR=/state JUDGE_PORT=8001
 
 # ffmpeg/ffprobe : decoding, validation, review-video encoding
-# libgl1/libegl1/libgles2/libglib2.0-0 : MediaPipe/OpenCV runtime
+# libgl1/libegl1/libgles2/libglib2.0-0/libsm6/libxext6/libxrender1 : MediaPipe/OpenCV runtime
 # fonts-dejavu-core : clock/rep text drawn on the review video
 # curl : container health check
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      ffmpeg libgl1 libegl1 libgles2 libglib2.0-0 fonts-dejavu-core curl \
+      ffmpeg libgl1 libegl1 libgles2 libglib2.0-0 libsm6 libxext6 libxrender1 fonts-dejavu-core curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY requirements.txt .
+COPY requirements-docker.txt requirements.txt
 RUN pip install -r requirements.txt
 
 COPY . .

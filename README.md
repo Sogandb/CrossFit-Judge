@@ -1,4 +1,4 @@
-# CrossFit Judge — Test Release (v2.3)
+# CrossFit Judge — Test Release (v2.4)
 
 **English first · فارسی در ادامه (scroll down for Persian)**
 
@@ -19,7 +19,7 @@ CrossFit Judge is an **AI assistant for human judges** of online CrossFit compet
 ### How a run works
 1. Upload (up to **500 MB** and **15 minutes**; MP4/MOV/WebM, ≥ 480p) with division and the athlete's claim (reps, or finish time / "time cap").
 2. The workout clock starts at the **first frame of the video** and stops at the **last rep (#126) or at 10:00**, whichever comes first.
-3. The engine follows a fixed **1…126 counter** (18 thrusters → 18 burpees → 15 → 15 → 12 → 12 → 9 → 9 → 6 → 6 → 3 → 3). At every slot it knows which movement to expect and only judges *that* movement.
+3. The engine first finds every real attempt in the whole video (a burpee needs floor contact **and** crossing the bar; a thruster needs a squat with the bar in the hands), then **aligns** them to the fixed **1…126 ladder** (18 thrusters → 18 burpees → 15 → 15 → 12 → 12 → 9 → 9 → 6 → 6 → 3 → 3) with a global dynamic-programming alignment. Resting, bending over, sitting/lying down or setting the bar down never count as reps; a missed detection marks exactly that slot "not detected" and never shifts the rest of the workout.
 4. Result: valid reps, no-reps with Persian reasons, a confidence per rep, claim-vs-detected check, a review queue for the judge, and the annotated video.
 
 ### Known limits of this release
@@ -69,6 +69,8 @@ docker compose -f docker-compose.yml -f docker-compose.https.yml up -d --build
 ```
 (Ports 80/443 must be open; Let's Encrypt certificates are automatic.) If the client already has a reverse proxy (nginx/Traefik), proxy to `web:3000`, allow request bodies ≥ 600 MB, and disable response buffering.
 
+> **Step-by-step server hand-over guide (Persian): `docs/DEPLOY_GUIDE_FA.md`** — includes `deploy/server-preflight.sh`, `deploy/install-docker-ubuntu.sh`, `deploy/smoke_test.py` and the GitHub Actions workflow that builds + smoke-tests the images.
+
 ### Configuration (`.env`)
 | Variable | Default | Meaning |
 |---|---|---|
@@ -100,19 +102,26 @@ Data lives in the Docker volume `judge_state`. The engine port (8001) is **not**
 | Upload rejected: size / duration / resolution | Limits: 500 MB, 15 min, ≥ 480p. |
 | 413 / upload stalls behind a proxy | Raise the proxy body limit (≥ 600 MB) and disable buffering. |
 | Build fails to download packages | Use the offline route (`deploy/export-images.sh`). |
+| `Cannot find module '../lightningcss.darwin-arm64.node'` (macOS) | Stale/foreign lockfile: `rm -rf node_modules package-lock.json .next && npm install` (or `bun install`). |
 | Disk filling up | Lower `JUDGE_RETENTION_DAYS`; check `docker system df`. |
 
 ---
 
 ## 3. Local development (without Docker)
+Requires **Python 3.10 – 3.13**, Node 20+ (or Bun), and ffmpeg.
 ```bash
 brew install ffmpeg            # or: sudo apt install -y ffmpeg libgl1 libegl1 fonts-dejavu-core
-cd mini-services/crossfit-judge && python3 -m venv venv && . venv/bin/activate
-pip install -r requirements-dev.txt
-python -m pytest tests -q      # engine tests
-cd ../.. && bun install && bun run dev     # or: npm install && npm run dev  → http://localhost:3000
+cd mini-services/crossfit-judge
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements-dev.txt          # engine + test tools
+python -m pytest tests -q                    # optional: engine tests
+python -m uvicorn main:app --host 127.0.0.1 --port 8001     # ← run the BACKEND (engine)
 ```
-In dev the web app starts the Python engine itself. Set `JUDGE_ENGINE_URL` to use an engine running elsewhere.
+In a second terminal, at the project root:
+```bash
+bun install && JUDGE_ENGINE_URL=http://127.0.0.1:8001 bun run dev     # or: npm install && JUDGE_ENGINE_URL=http://127.0.0.1:8001 npm run dev
+```
+Open http://localhost:3000. (If you omit `JUDGE_ENGINE_URL`, the web app starts the engine itself using `mini-services/crossfit-judge/venv`.)
 
 ### Repository layout
 ```
@@ -121,13 +130,13 @@ mini-services/crossfit-judge/   Python engine (FastAPI, MediaPipe, ffmpeg)
   core/ movements/ judging/     counter, movement state machines, scoring
   data/                          WOD definition, divisions, pose model
 Dockerfile, docker-compose*.yml  deployment
-docs/CHANGES_v2.1_FA.md          change log (Persian)
+docs/CHANGES_v2.4_FA.md          change log (Persian)
 ```
 
 ---
 ---
 
-# داور هوشمند کراس‌فیت — نسخه آزمایشی (v2.3)
+# داور هوشمند کراس‌فیت — نسخه آزمایشی (v2.4)
 
 ## ۱. این سیستم چیست و چه چیزی **نیست**
 
@@ -144,7 +153,7 @@ docs/CHANGES_v2.1_FA.md          change log (Persian)
 ### روند کار
 ۱. آپلود (حداکثر **۵۰۰ مگابایت** و **۱۵ دقیقه**؛ MP4/MOV/WebM، حداقل ۴۸۰p) همراه با رده و ادعای ورزشکار (تعداد رپ، یا زمان پایان / «تایم‌کپ»).
 ۲. ساعت واد از **فریم اول ویدیو** شروع می‌شود و با **آخرین رپ (۱۲۶ام) یا ۱۰:۰۰** (هرکدام زودتر) متوقف می‌شود.
-۳. موتور طبق یک **شمارنده‌ی ثابت ۱ تا ۱۲۶** پیش می‌رود (۱۸ تراستر ← ۱۸ برپی ← ۱۵ ← ۱۵ ← ۱۲ ← ۱۲ ← ۹ ← ۹ ← ۶ ← ۶ ← ۳ ← ۳). در هر اسلات می‌داند چه حرکتی باید ببیند و فقط همان را داوری می‌کند.
+۳. موتور ابتدا همه‌ی تلاش‌های واقعی را در کل ویدیو پیدا می‌کند (برپی = تماس با زمین **و** عبور از هالتر؛ تراستر = اسکوات با هالتر در دست) و سپس با **همترازی سراسری** آن‌ها را به **جدول ثابت ۱ تا ۱۲۶** (۱۸ تراستر ← ۱۸ برپی ← ۱۵ ← ۱۵ ← ۱۲ ← ۱۲ ← ۹ ← ۹ ← ۶ ← ۶ ← ۳ ← ۳) می‌چسباند. استراحت، خم‌شدن، نشستن/دراز کشیدن و گذاشتن هالتر روی زمین هرگز رپ حساب نمی‌شوند؛ تشخیص از دست‌رفته فقط همان اسلات را «تشخیص داده نشد» می‌کند و بقیه‌ی واد جابه‌جا نمی‌شود.
 ۴. خروجی: رپ‌های معتبر، نو-رپ‌ها با دلیل فارسی، درصد اطمینان هر رپ، تطبیق ادعا با شمارش سیستم، صف بازبینی برای داور و ویدیوی نشانه‌گذاری‌شده.
 
 ### محدودیت‌های شناخته‌شده‌ی این نسخه
@@ -194,6 +203,8 @@ docker compose -f docker-compose.yml -f docker-compose.https.yml up -d --build
 ```
 (پورت‌های ۸۰ و ۴۴۳ باید باز باشند؛ گواهی Let's Encrypt خودکار است.) اگر کارفرما از قبل reverse proxy دارد (nginx/Traefik)، به `web:3000` پروکسی کنید، حجم بدنه‌ی درخواست را ≥ ۶۰۰ مگابایت بگذارید و buffering پاسخ را خاموش کنید.
 
+> **راهنمای گام‌به‌گام تحویل روی سرور: `docs/DEPLOY_GUIDE_FA.md`** — شامل `deploy/server-preflight.sh`، `deploy/install-docker-ubuntu.sh`، `deploy/smoke_test.py` و workflow گیت‌هاب که ایمیج‌ها را می‌سازد و تست می‌کند.
+
 ### تنظیمات (`.env`)
 | متغیر | پیش‌فرض | معنی |
 |---|---|---|
@@ -225,19 +236,26 @@ docker run --rm -v crossfit-judge_judge_state:/s -v "$PWD":/b alpine tar czf /b/
 | آپلود رد شد: حجم / مدت / رزولوشن | محدودیت‌ها: ۵۰۰ مگابایت، ۱۵ دقیقه، حداقل ۴۸۰p. |
 | خطای 413 یا گیرکردن آپلود پشت پروکسی | سقف بدنه‌ی پروکسی را ≥ ۶۰۰ مگابایت کنید و buffering را خاموش کنید. |
 | build نمی‌تواند بسته دانلود کند | از روش آفلاین (`deploy/export-images.sh`) استفاده کنید. |
+| خطای `Cannot find module '../lightningcss.darwin-arm64.node'` (مک) | lockfile قدیمی/ناهمخوان: `rm -rf node_modules package-lock.json .next && npm install` (یا `bun install`). |
 | پرشدن دیسک | `JUDGE_RETENTION_DAYS` را کمتر کنید؛ `docker system df` را ببینید. |
 
 ---
 
 ## ۳. توسعه‌ی محلی (بدون Docker)
+نیاز: **پایتون ۳٫۱۰ تا ۳٫۱۳**، Node 20+ (یا Bun) و ffmpeg.
 ```bash
 brew install ffmpeg            # یا: sudo apt install -y ffmpeg libgl1 libegl1 fonts-dejavu-core
-cd mini-services/crossfit-judge && python3 -m venv venv && . venv/bin/activate
-pip install -r requirements-dev.txt
-python -m pytest tests -q      # تست‌های موتور
-cd ../.. && bun install && bun run dev     # یا: npm install && npm run dev  ← http://localhost:3000
+cd mini-services/crossfit-judge
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements-dev.txt          # موتور + ابزار تست
+python -m pytest tests -q                    # اختیاری: تست‌های موتور
+python -m uvicorn main:app --host 127.0.0.1 --port 8001     # ← اجرای بک‌اند (موتور)
 ```
-در حالت توسعه، برنامه‌ی وب خودش موتور پایتون را اجرا می‌کند. برای استفاده از موتوری که جای دیگری اجرا می‌شود `JUDGE_ENGINE_URL` را تنظیم کنید.
+در ترمینال دوم، در ریشه‌ی پروژه:
+```bash
+bun install && JUDGE_ENGINE_URL=http://127.0.0.1:8001 bun run dev     # یا: npm install && JUDGE_ENGINE_URL=http://127.0.0.1:8001 npm run dev
+```
+آدرس: http://localhost:3000 . (اگر `JUDGE_ENGINE_URL` را ندهی، برنامه‌ی وب خودش موتور را با venv داخل `mini-services/crossfit-judge/venv` اجرا می‌کند.)
 
 ### ساختار پروژه
 ```
@@ -246,5 +264,5 @@ mini-services/crossfit-judge/   موتور پایتون (FastAPI، MediaPipe، f
   core/ movements/ judging/     شمارنده، ماشین‌حالت حرکات، امتیازدهی
   data/                          تعریف واد، رده‌ها، مدل پوز
 Dockerfile, docker-compose*.yml  استقرار
-docs/CHANGES_v2.1_FA.md          تاریخچه‌ی تغییرات
+docs/CHANGES_v2.4_FA.md          تاریخچه‌ی تغییرات
 ```

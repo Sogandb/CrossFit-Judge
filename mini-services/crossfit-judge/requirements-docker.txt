@@ -1,0 +1,9 @@
+# EXACT versions verified on Python 3.12 — used by the Docker image (reproducible build).
+fastapi==0.143.1
+uvicorn[standard]==0.54.0
+python-multipart==0.0.32
+mediapipe==1.1.1
+opencv-python-headless==5.0.0.93
+numpy==2.5.4
+scipy==1.18.1
+Pillow==12.3.0

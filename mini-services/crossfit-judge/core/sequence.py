@@ -149,6 +149,10 @@ class PhaseState:
     consumed: list = field(default_factory=list)   # ScoredEvents, in order
     rep_start: int = 1           # anchored overall rep number this phase starts at
     rep_end: int = 0
+    # aligned engine: EXACT slot position of every event (online engine keeps
+    # the legacy "consumed in order" list and leaves these unset)
+    slot_map: Optional[dict] = None          # k (0-based in phase) -> ScoredEvent
+    nd_slots: set = field(default_factory=set)
 
     @property
     def slots_filled(self) -> int:
@@ -442,6 +446,61 @@ class WodSequencer:
         last = max((e.attempt.t_end for e in consumed), default=self.t_start)
         self.finish_time = max(0.0, last - self.t_start)
 
+    def load_aligned(self, slot_attempts: dict[int, Attempt], post_cap: int = 0,
+                     noise: int = 0, t_end_video: Optional[float] = None) -> None:
+        """Fill the sequencer from a GLOBAL alignment (slot index 0..M-1 ->
+        judged Attempt). Slots between the first and last matched slot that
+        have no attempt are 'not detected'; slots after the last matched slot
+        are 'not reached'. The WOD is finished only if the LAST slot holds a
+        real detected attempt — never because a counter ran out."""
+        matched = sorted(slot_attempts)
+        first, last = (matched[0], matched[-1]) if matched else (0, -1)
+        self.events = []
+        for ph in self.phases:
+            ph.slot_map, ph.nd_slots = {}, set()
+            ph.attempts = ph.credited = ph.not_detected = 0
+            ph.consumed = []
+        for pi, ph in enumerate(self.phases):
+            for k in range(ph.reps):
+                sl = ph.rep_start - 1 + k
+                a = slot_attempts.get(sl)
+                if a is not None:
+                    ev = ScoredEvent(attempt=a, phase_idx=pi, rep_no=sl + 1,
+                                     scored=(a.outcome == REP), kind="slot",
+                                     expected_movement=ph.movement,
+                                     notes=[] if a.outcome == REP else
+                                     ["نورپ — رپ شمرده شد اما امتیاز نگرفت"],
+                                     notes_en=[] if a.outcome == REP else
+                                     ["No-rep — the slot was consumed but not scored"])
+                    ph.slot_map[k] = ev
+                    ph.consumed.append(ev)
+                    ph.attempts += 1
+                    ph.credited += 1 if a.outcome == REP else 0
+                    self.events.append(ev)
+                elif sl <= last:
+                    ph.nd_slots.add(k)
+                    ph.not_detected += 1
+        self.events.sort(key=lambda e: e.attempt.t_start)
+        self.noise_events = noise
+        self.post_cap_events = post_cap
+        self.cap_hit = bool(post_cap)
+        covered = [i for i, ph in enumerate(self.phases) if ph.slots_filled > 0]
+        self.phase_idx = (max(covered) if covered else 0)
+        self.finished = bool(matched) and (self.total_reps - 1) in slot_attempts
+        if self.finished:
+            self.finish_time = max(0.0, slot_attempts[self.total_reps - 1].t_end - self.t_start)
+        # one flag per run of undetected slots (honest, no invented verdicts)
+        run: list[int] = []
+        for sl in range(first, last + 1):
+            if sl not in slot_attempts:
+                run.append(sl)
+            if (sl in slot_attempts or sl == last) and run:
+                prev = slot_attempts.get(run[0] - 1) or slot_attempts.get(run[-1] + 1)
+                self._flag("SEQ_SLOTS_NOT_DETECTED",
+                           prev.t_end if prev else self.t_start,
+                           {"from_rep": run[0] + 1, "to_rep": run[-1] + 1, "count": len(run)})
+                run = []
+
     def flush(self, t_end: float) -> None:
         """Stream end: everything still held is honest detection noise."""
         for movement, held in list(self.held.items()):
@@ -505,8 +564,18 @@ class WodSequencer:
                     "movement_fa": mv_fa,
                     "movement_en": self.labels_en.get(phase.movement, phase.movement),
                 }
-                if i < len(phase.consumed):
+                if phase.slot_map is not None:
+                    ev = phase.slot_map.get(i)
+                    if ev is None:
+                        base.update({"verdict": V_NOT_DETECTED if i in phase.nd_slots
+                                     else V_NOT_REACHED})
+                        rows.append(base)
+                        continue
+                elif i < len(phase.consumed):
                     ev = phase.consumed[i]
+                else:
+                    ev = None
+                if ev is not None:
                     base.update({
                         "verdict": ev.attempt.outcome,     # rep | no_rep
                         "t_start": round(ev.attempt.t_start, 2),

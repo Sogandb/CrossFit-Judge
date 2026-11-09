@@ -1,0 +1,58 @@
+# Builds the two Docker images for linux/amd64, runs a REAL end-to-end smoke test
+# (compose up -> upload a video through the public web port -> analysis -> review video)
+# and publishes the images as a downloadable artifact — so you never need Docker
+# on your own computer and the server never needs to build anything.
+#
+# Run it:  GitHub -> Actions -> "build-images" -> Run workflow   (or push a tag v*)
+name: build-images
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Prepare .env for the smoke test
+        run: |
+          cp .env.example .env
+          sed -i 's/^ACCESS_PASSWORD=.*/ACCESS_PASSWORD=ci-smoke/' .env
+
+      - name: Build images (linux/amd64)
+        run: docker compose build
+
+      - name: Start the stack
+        run: docker compose up -d
+
+      - name: Wait for healthy services
+        run: |
+          for i in $(seq 1 60); do
+            s=$(docker compose ps --format json | python3 -c "import sys,json; rows=[json.loads(l) for l in sys.stdin if l.strip()]; print(all(r.get('Health','healthy')=='healthy' for r in rows))")
+            [ "$s" = "True" ] && exit 0
+            sleep 5
+          done
+          docker compose ps; docker compose logs --tail 80; exit 1
+
+      - name: Smoke test (upload -> analysis -> review video)
+        run: python3 deploy/smoke_test.py http://localhost:8080 wodx:ci-smoke
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs --tail 200
+
+      - name: Save images
+        run: |
+          docker save crossfit-judge-engine:test crossfit-judge-web:test | gzip > crossfit-judge-images.tar.gz
+          ls -lh crossfit-judge-images.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crossfit-judge-images
+          path: crossfit-judge-images.tar.gz
+          retention-days: 14
+          compression-level: 0
